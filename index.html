@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -209,7 +209,7 @@
         reviewsCount: 290,
         origin: "Ratnagiri Harbor, Konkan Coast",
         preparation: "Fresh micro sea prawns cured naturally under direct coastal sunlight with clean sea breeze.",
-        cookTips: "SautÃ© with chopped onions, green chillies, and fresh grated coconut for traditional Kolambi Kismoor or spicy tawa fry.",
+        cookTips: "Saute with chopped onions, green chillies, and fresh grated coconut for traditional Kolambi Kismoor or spicy tawa fry.",
         shelfLife: "6 Months",
         image: "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80",
         variants: [
@@ -505,28 +505,21 @@
       footerCopyright: "CKP's Crunch. All rights reserved."
     };
 
-    // Helper to sanitize any corrupt mojibake characters into standard clean Indian English
+    // Helper to sanitize any corrupt mojibake characters into standard clean Indian English & emojis
     const cleanMojibakeStr = (str) => {
       if (!str || typeof str !== "string") return str;
       return str
-        .replace(/\u00F0\u0178\u201D\u00A5/g, "ðŸ”¥")
-        .replace(/Ã°Å¸â€Â¥/g, "ðŸ”¥")
-        .replace(/\u00F0\u0178\u009F\u0178/g, "ðŸŸ")
-        .replace(/Ã°Å¸ Å¸/g, "ðŸŸ")
-        .replace(/\u00F0\u0178\u0090\u0178/g, "ðŸŸ")
-        .replace(/\u00F0\u0178\u0152\u00BF/g, "ðŸŒ¿")
-        .replace(/Ã°Å¸Å’Â¿/g, "ðŸŒ¿")
-        .replace(/\u00F0\u0178\u008F\u00BA/g, "ðŸº")
-        .replace(/Ã°Å¸ Âº/g, "ðŸº")
-        .replace(/\u00E2\u0153\u00A8/g, "âœ¨")
-        .replace(/Ã¢Å“Â¨/g, "âœ¨")
-        .replace(/\u00E2\u201A\u00B9/g, "â‚¹")
-        .replace(/Ã¢â€šÂ¹/g, "â‚¹")
-        .replace(/\u00E2\u20AC\u00A2/g, "â€¢")
-        .replace(/Ã¢â‚¬Â¢/g, "â€¢")
-        .replace(/\u00E2\u0153\u201C/g, "âœ“")
-        .replace(/Ã¢Å“â€œ/g, "âœ“")
-        .replace(/Ã°Å¸[^\s]*/g, "");
+        .replace(/\u00F0\u0178\u201D\u00A5|\u00C3\u00B0\u00C5\u00B8\u00E2\u20AC\u00A0\u00C2\u00A5|\u00F0\u0178[\s\S]{1,2}\u00A5/g, "\uD83D\uDD25")
+        .replace(/\u00F0\u0178\u009F\u0178|\u00F0\u0178\u0090\u0178|\u00C3\u00B0\u00C5\u00B8\u00C2\u00A0\u00C5\u00B8/g, "\uD83D\uDC1F")
+        .replace(/\u00F0\u0178\u0152\u00BF|\u00C3\u00B0\u00C5\u00B8\u00C5\u2019\u00C2\u00BF/g, "\uD83C\uDF3F")
+        .replace(/\u00F0\u0178\u008F\u00BA|\u00C3\u00B0\u00C5\u00B8\u00C2\u00A0\u00C2\u00BA/g, "\uD83C\uDFFA")
+        .replace(/\u00E2\u0153\u00A8|\u00C3\u00A2\u00C5\u201C\u00C2\u00A8/g, "\u2728")
+        .replace(/\u00E2\u201A\u00B9|\u00C3\u00A2\u00E2\u201A\u00AC\u0161\u00C2\u00B9/g, "\u20B9")
+        .replace(/\u00E2\u20AC\u00A2|\u00C3\u00A2\u00E2\u201A\u00AC\u00C2\u00A2/g, "\u2022")
+        .replace(/\u00E2\u0153\u201C|\u00C3\u00A2\u00C5\u201C\u00E2\u20AC\u0153/g, "\u2713")
+        .replace(/\u00E2\u02DC\u2026|\u00C3\u00A2\u02DC\u2026/g, "\u2605")
+        .replace(/\u00E2\u017E\u2022|\u00C3\u00A2\u017E\u00A2/g, "\u2795")
+        .replace(/Saut[\u00C3\u01F8\u00E9\u00A9]+/gi, "Saute");
     };
 
     const sanitizeContent = (obj) => {
@@ -552,12 +545,12 @@
       // 0. Website Content, Images, Logos & Emojis (Customizable & Editable by Owner)
       const [siteContent, setSiteContent] = useState(() => {
         try {
-          const s = localStorage.getItem("ckp_site_content_v11");
+          const s = localStorage.getItem("ckp_site_content_v12");
           return s ? { ...DEFAULT_SITE_CONTENT, ...sanitizeContent(JSON.parse(s)) } : DEFAULT_SITE_CONTENT;
         } catch(e) { return DEFAULT_SITE_CONTENT; }
       });
       useEffect(() => {
-        localStorage.setItem("ckp_site_content_v11", JSON.stringify(siteContent));
+        localStorage.setItem("ckp_site_content_v12", JSON.stringify(siteContent));
       }, [siteContent]);
 
       // Owner Live In-Place Customizers
@@ -3883,7 +3876,7 @@
                             <div className="bg-stone-100/80 border border-stone-200 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
                               <div>
                                 <div className="text-stone-500 font-medium">
-                                  Package: {detailQty} × {currentVariant.weight || currentVariant.size} ({displayWeightStr})
+                                  Package: {detailQty} x {currentVariant.weight || currentVariant.size} ({displayWeightStr})
                                 </div>
                                 <div className="text-stone-900 font-bold">
                                   Subtotal: &#8377;{currentItemSubtotal} + &#8377;{currentDelhiveryCharge} Delivery
