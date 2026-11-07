@@ -1098,7 +1098,7 @@
       const cartTotalWeightGrams = useMemo(() => {
         return cart.reduce((tot, i) => tot + parseWeightGrams(i.weight, i.size) * i.quantity, 0);
       }, [cart]);
-      const isFreeDelivery = cartSubtotal >= ownerConfig.freeDeliveryMin;
+      const isFreeDelivery = false; // Free delivery offer removed: actual shipping applies to all orders
       const baseShippingFee = useMemo(() => {
         if (!pincodeResult) return ownerConfig.shippingFee || 50;
         const base = pincodeResult.baseRate || pincodeResult.rate || 60;
@@ -1107,7 +1107,7 @@
         const extraSlabs = Math.max(0, Math.ceil((totalW - 500) / 500));
         return base + (extraSlabs * slab);
       }, [pincodeResult, cartTotalWeightGrams, ownerConfig.shippingFee]);
-      const shippingCharge = cartSubtotal > 0 ? (isFreeDelivery ? 0 : baseShippingFee) : 0;
+      const shippingCharge = cartSubtotal > 0 ? baseShippingFee : 0;
       const cartTotal = cartSubtotal + shippingCharge;
       const totalItemsCount = cart.reduce((c, i) => c + i.quantity, 0);
 
@@ -2015,15 +2015,15 @@
                         </div>
 
                         <div>
-                          <label className="block font-bold text-stone-700 mb-1">Free Delivery Minimum Order Amount (&#8377;):</label>
+                          <label className="block font-bold text-stone-700 mb-1">Standard Packaging &amp; Handling (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
-                            value={ownerConfig.freeDeliveryMin}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, freeDeliveryMin: Number(e.target.value) })}
+                            value={ownerConfig.packagingFee || 0}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, packagingFee: Number(e.target.value) })}
                             className="w-full border rounded-xl p-3 bg-white font-mono font-bold text-sm"
                           />
-                          <p className="text-[11px] text-stone-500 mt-1">Orders above this amount get 100% FREE delivery (set to 0 to make all orders free delivery).</p>
+                          <p className="text-[11px] text-stone-500 mt-1">Free delivery offer is disabled. Accurate shipping applies to all orders.</p>
                         </div>
                       </div>
 
@@ -2958,16 +2958,16 @@
                         setTrackSearchInput("");
                         setTrackedOrder(null);
                       }}
-                      className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs"
+                      className="inline-flex items-center gap-1 bg-stone-100 hover:bg-stone-200 text-stone-800 px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold transition shadow-xs"
                       title="Track or Cancel your order"
                     >
                       <span>&#128230;</span>
-                      <span className="hidden md:inline">Track / Cancel Order</span>
+                      <span className="hidden sm:inline">Track / Cancel</span>
                     </button>
 
                     <button
                       onClick={() => setIsCartOpen(true)}
-                      className="relative flex items-center gap-2 bg-gradient-to-r from-sky-700 to-amber-700 text-white px-4 py-2.5 rounded-full font-bold shadow-md transition active:scale-95"
+                      className="relative flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-sky-700 to-amber-700 text-white px-3 py-2 sm:px-4 sm:py-2.5 rounded-full font-bold shadow-md transition active:scale-95"
                     >
                       <span>{renderEditableEmoji("navCartEmoji", "🛍️")}</span>
                       <span className="hidden sm:inline">{renderEditable("navCartText", "Cart Button Text", siteContent.navCartText)}</span>
@@ -2978,6 +2978,40 @@
                       )}
                     </button>
                   </div>
+                </div>
+
+                {/* Mobile Quick Department Switcher */}
+                <div className="md:hidden bg-stone-100/90 backdrop-blur-sm border-t border-stone-200 px-3 py-2 flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none text-xs font-bold">
+                  <button
+                    onClick={() => { setActiveSection("All"); setViewMode("store"); }}
+                    className={`px-3 py-1.5 rounded-xl transition shrink-0 ${activeSection === "All" && viewMode === "store" ? "bg-stone-900 text-white shadow-xs" : "bg-white text-stone-700 border"}`}
+                  >
+                    🛒 All ({counts.all})
+                  </button>
+                  <button
+                    onClick={() => { setActiveSection("Top Sellers"); setViewMode("store"); }}
+                    className={`px-3 py-1.5 rounded-xl transition shrink-0 ${activeSection === "Top Sellers" && viewMode === "store" ? "bg-amber-600 text-white shadow-xs" : "bg-white text-stone-700 border"}`}
+                  >
+                    🔥 Top Sellers
+                  </button>
+                  <button
+                    onClick={() => { setActiveSection("Dry Fish"); setViewMode("store"); }}
+                    className={`px-3 py-1.5 rounded-xl transition shrink-0 ${activeSection === "Dry Fish" && viewMode === "store" ? "bg-sky-800 text-white shadow-xs" : "bg-white text-stone-700 border"}`}
+                  >
+                    🐟 Dry Fish ({counts.dryfish})
+                  </button>
+                  <button
+                    onClick={() => { setActiveSection("Spices"); setViewMode("store"); }}
+                    className={`px-3 py-1.5 rounded-xl transition shrink-0 ${activeSection === "Spices" && viewMode === "store" ? "bg-amber-700 text-white shadow-xs" : "bg-white text-stone-700 border"}`}
+                  >
+                    🌿 Spices ({counts.spices})
+                  </button>
+                  <button
+                    onClick={() => { setActiveSection("Pickles"); setViewMode("store"); }}
+                    className={`px-3 py-1.5 rounded-xl transition shrink-0 ${activeSection === "Pickles" && viewMode === "store" ? "bg-red-800 text-white shadow-xs" : "bg-white text-stone-700 border"}`}
+                  >
+                    🏺 Pickles ({counts.pickles})
+                  </button>
                 </div>
               </header>
 
@@ -2999,12 +3033,11 @@
                     : `${totalSelectedWeightGrams}g`;
 
                   const currentItemSubtotal = (currentVariant?.price || 0) * detailQty;
-                  const isCurrentItemFreeDelivery = currentItemSubtotal >= (ownerConfig.freeDeliveryMin || 999);
+                  const isCurrentItemFreeDelivery = false; // Free delivery removed
 
                   // Dynamic Delhivery delivery charge as per weight & distance from Murud-Janjira
                   const currentDelhiveryCharge = (() => {
                     if (!pincodeResult) return ownerConfig.shippingFee || 50;
-                    if (isCurrentItemFreeDelivery) return 0;
                     const base = pincodeResult.baseRate || pincodeResult.rate || 60;
                     const slab = pincodeResult.slabAddon || 25;
                     const extraSlabs = Math.max(0, Math.ceil((totalSelectedWeightGrams - 500) / 500));
@@ -3016,10 +3049,10 @@
                   const currentDisplayImage = productImages[activeImageIdx] || p.image;
 
                   return (
-                    <main className="min-h-screen bg-stone-50 pb-20 animate-fadeIn flex-1 font-sans">
+                    <main className="min-h-screen bg-stone-50 pb-32 sm:pb-20 animate-fadeIn flex-1 font-sans">
                       
                       {/* Top Bar / Breadcrumb Navigation */}
-                      <div className="bg-white border-b border-stone-200 sticky top-20 z-30 shadow-xs">
+                      <div className="bg-white/95 backdrop-blur-md border-b border-stone-200 sticky top-0 sm:top-20 z-30 shadow-xs">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
                           
                           <button
@@ -3617,28 +3650,11 @@
                                           {pincodeResult.courier} • Parcel: <strong className="text-stone-800">{displayWeightStr}</strong>
                                         </div>
                                         <div className="text-sm font-black text-stone-900 flex flex-wrap items-center gap-2">
-                                          {isCurrentItemFreeDelivery ? (
-                                            <>
-                                              <span className="line-through text-stone-400 font-normal text-xs">&#8377;{pincodeResult.baseRate || pincodeResult.rate}</span>
-                                              <span className="text-emerald-700">&#8377;0 FREE Delivery!</span>
-                                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                                Order above &#8377;{ownerConfig.freeDeliveryMin}
-                                              </span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <span>Delivery: &#8377;{currentDelhiveryCharge}</span>
-                                              <span className="text-[11px] font-normal text-stone-500">
-                                                (for {displayWeightStr} parcel)
-                                              </span>
-                                            </>
-                                          )}
+                                          <span>Delivery Charge: &#8377;{currentDelhiveryCharge}</span>
+                                          <span className="text-[11px] font-normal text-stone-500">
+                                            (for {displayWeightStr} parcel from Murud-Janjira)
+                                          </span>
                                         </div>
-                                        {!isCurrentItemFreeDelivery && ownerConfig.freeDeliveryMin > currentItemSubtotal && (
-                                          <div className="text-[10px] text-sky-800 font-semibold pt-0.5">
-                                            💡 Add &#8377;{ownerConfig.freeDeliveryMin - currentItemSubtotal} more for 100% FREE Delivery!
-                                          </div>
-                                        )}
                                       </div>
 
                                       <div className="text-right">
@@ -3675,13 +3691,13 @@
                                   Package: {detailQty} × {currentVariant.weight || currentVariant.size} ({displayWeightStr})
                                 </div>
                                 <div className="text-stone-900 font-bold">
-                                  Subtotal: &#8377;{currentItemSubtotal} {isCurrentItemFreeDelivery ? "+ Free Shipping" : `+ &#8377;${currentDelhiveryCharge} Delivery`}
+                                  Subtotal: &#8377;{currentItemSubtotal} + &#8377;{currentDelhiveryCharge} Delivery
                                 </div>
                               </div>
                               <div className="text-right">
                                 <div className="text-[11px] text-stone-500 font-medium">Estimated Total:</div>
                                 <div className="text-lg font-black text-stone-900">
-                                  &#8377;{currentItemSubtotal + (isCurrentItemFreeDelivery ? 0 : currentDelhiveryCharge)}
+                                  &#8377;{currentItemSubtotal + currentDelhiveryCharge}
                                 </div>
                               </div>
                             </div>
@@ -3991,6 +4007,39 @@
                           </div>
                         </div>
 
+                      </div>
+
+                      {/* Sticky Mobile Bottom Floating Action Bar */}
+                      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-4 py-3 flex items-center justify-between gap-3 shadow-2xl">
+                        <div>
+                          <div className="text-[10px] text-stone-500 font-semibold uppercase">Total ({detailQty} pack{detailQty > 1 ? "s" : ""}):</div>
+                          <div className="text-base font-black text-stone-900">&#8377;{currentItemSubtotal + currentDelhiveryCharge}</div>
+                        </div>
+                        <div className="flex gap-2 flex-1 max-w-xs">
+                          <button
+                            disabled={p.stock <= 0}
+                            onClick={() => {
+                              addToCart(p, detailVariantIdx, detailQty);
+                              if (window.confetti) window.confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
+                            }}
+                            className="flex-1 bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-amber-300 font-bold py-2.5 px-2 rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-sm"
+                          >
+                            <span>&#128722;</span>
+                            <span>Add</span>
+                          </button>
+                          <button
+                            disabled={p.stock <= 0}
+                            onClick={() => {
+                              addToCart(p, detailVariantIdx, detailQty);
+                              setShowCart(false);
+                              setShowCheckoutDetailsModal(true);
+                            }}
+                            className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 disabled:from-stone-300 disabled:to-stone-300 text-stone-950 font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1 shadow-md"
+                          >
+                            <span>&#9889;</span>
+                            <span>Buy Now</span>
+                          </button>
+                        </div>
                       </div>
                     </main>
                   );
@@ -4974,7 +5023,7 @@
                   <div className="p-4 border-t bg-stone-50 space-y-3">
                     <div className="space-y-1 text-xs text-stone-600">
                       <div className="flex justify-between"><span>Items Subtotal</span><span>₹{cartSubtotal}</span></div>
-                      <div className="flex justify-between"><span>Delivery</span><span>{shippingCharge === 0 ? <strong className="text-emerald-700">FREE</strong> : `₹${shippingCharge}`}</span></div>
+                      <div className="flex justify-between"><span>Courier Delivery</span><span>₹{shippingCharge}</span></div>
                       <div className="flex justify-between text-stone-900 font-extrabold text-base pt-1 border-t">
                         <span>Total</span><span>₹{cartTotal}</span>
                       </div>
@@ -6011,7 +6060,7 @@
                 {renderEditable("footerNotice", "Footer Quality Notice", siteContent.footerNotice)}
               </div>
               <div className="text-[11px] text-sky-400 pt-1">
-                UPI Auto Pay: <code className="text-amber-300">{ownerConfig.upiId}</code> • Free Delivery Above ₹{ownerConfig.freeDeliveryMin}
+                UPI Auto Pay: <code className="text-amber-300">{ownerConfig.upiId}</code> • Direct Coastal Delivery Across India
               </div>
               <div className="pt-2 text-sky-500">
                 © {new Date().getFullYear()} {siteContent.storeTitle}. All rights reserved.
