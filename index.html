@@ -1058,7 +1058,7 @@
           }
           return p;
         }));
-        setEditingProductModal(null);
+        setEditingProductModal(null); setHasUnpublishedChanges(true);
         alert("Product details updated successfully!");
       };
 
@@ -1088,13 +1088,13 @@
           }
           return p;
         }));
-        setAddingReviewModal(null);
+        setAddingReviewModal(null); setHasUnpublishedChanges(true);
         alert("Customer review added and published live!");
       };
 
       // Owner product helpers
       const updateStock = (id, val) => {
-        setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: Math.max(0, Number(val)) } : p));
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: Math.max(0, Number(val)) } : p)); setHasUnpublishedChanges(true);
       };
 
       const handleSaveProduct = (e) => {
@@ -3089,7 +3089,7 @@
                   </button>
                   <button
                     onClick={() => {
-                      setSiteContent(prev => ({ ...prev, [editingTextModal.key]: editingTextModal.value }));
+                      setSiteContent(prev => ({ ...prev, [editingTextModal.key]: editingTextModal.value })); setHasUnpublishedChanges(true);
                       setEditingTextModal(null);
                     }}
                     className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow"
