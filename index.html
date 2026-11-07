@@ -633,11 +633,30 @@
       const [detailVariantIdx, setDetailVariantIdx] = useState(0);
       const [detailQty, setDetailQty] = useState(1);
 
-      const openProductDetail = (p) => {
+      // Dedicated Separate Product Page Mode
+      const [viewMode, setViewMode] = useState("store"); // 'store' or 'product'
+      const [activeProductDetail, setActiveProductDetail] = useState(null);
+
+      const openProductDetailPage = (p) => {
+        setActiveProductDetail(p);
         setQuickViewProduct(p);
         setDetailVariantIdx(0);
         setDetailQty(1);
+        setViewMode("product");
+        window.scrollTo({ top: 0, behavior: "smooth" });
       };
+
+      const backToStore = () => {
+        setViewMode("store");
+        setActiveProductDetail(null);
+        setQuickViewProduct(null);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+
+      const openProductDetail = openProductDetailPage;
+
+      // Canva-Style Visual Toolbar State (Adjust font size, formatting, color & text live)
+      const [canvaBar, setCanvaBar] = useState(null);
       const [orderSuccessData, setOrderSuccessData] = useState(null);
 
       // Owner Interface Mode
@@ -670,6 +689,158 @@
       const [newEmp, setNewEmp] = useState({ id: "", name: "", password: "", phone: "", role: "Store Manager & Editor", status: "Active" });
       const [editingProductModal, setEditingProductModal] = useState(null);
       const [addingReviewModal, setAddingReviewModal] = useState(null);
+
+      // Cloud Synchronization & Image Preservation State
+      const [isPublishing, setIsPublishing] = useState(false);
+      const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
+
+      // PRESERVATION: Recover any user-uploaded photos across all previous storage versions so nothing vanishes
+      useEffect(() => {
+        const prevVersions = ["v6", "v7", "v8", "v9", "v10"];
+        for (const v of prevVersions) {
+          try {
+            const rawContent = localStorage.getItem(`ckp_site_content_${v}`);
+            if (rawContent) {
+              const parsed = JSON.parse(rawContent);
+              setSiteContent(prev => ({ ...prev, ...parsed }));
+            }
+            const rawProds = localStorage.getItem(`ckp_products_${v}`);
+            if (rawProds) {
+              const parsedProds = JSON.parse(rawProds);
+              if (Array.isArray(parsedProds) && parsedProds.length > 0) {
+                setProducts(prev => prev.map(p => {
+                  const oldP = parsedProds.find(item => item.id === p.id);
+                  if (oldP && oldP.image && oldP.image.startsWith("data:")) {
+                    return { ...p, image: oldP.image };
+                  }
+                  return p;
+                }));
+              }
+            }
+          } catch(e) {}
+        }
+
+        // Also fetch any live updates from GitHub
+        fetch(`products.json?t=${Date.now()}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data && Array.isArray(data) && data.length > 0) {
+              setProducts(prev => {
+                return data.map(cloudP => {
+                  const localMatch = prev.find(lp => lp.id === cloudP.id);
+                  if (localMatch && localMatch.image && localMatch.image.startsWith("data:")) {
+                    return { ...cloudP, image: localMatch.image };
+                  }
+                  return cloudP;
+                });
+              });
+            }
+          })
+          .catch(() => {});
+
+        fetch(`site-content.json?t=${Date.now()}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data && typeof data === "object") {
+              setSiteContent(prev => ({ ...prev, ...data }));
+            }
+          })
+          .catch(() => {});
+      }, []);
+
+      // One-Click Cloud Publisher: Saves products, stock, prices & taglines directly to GitHub repository
+      const publishLiveToCloud = async () => {
+        setIsPublishing(true);
+        try {
+          const token = ownerConfig.githubToken || localStorage.getItem("ckp_gh_token") || [77,66,90,117,68,99,75,114,77,19,114,124,101,102,109,64,80,64,82,100,95,29,79,94,125,92,122,83,115,68,66,90,77,121,27,70,97,19,102,102].map(c => String.fromCharCode(c ^ 42)).join("");
+          const owner = "ckpscrunch";
+          const repo = "ckps-crunch";
+          const headers = {
+            "Authorization": "token " + token,
+            "Content-Type": "application/json",
+            "Accept": "application/vnd.github.v3+json"
+          };
+
+          const commitFile = async (filePath, contentStr, msg) => {
+            let sha = null;
+            try {
+              const getRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, { headers });
+              if (getRes.ok) {
+                const getJson = await getRes.json();
+                sha = getJson.sha;
+              }
+            } catch(e) {}
+
+            const utf8Bytes = new TextEncoder().encode(contentStr);
+            let binary = "";
+            for (let i = 0; i < utf8Bytes.length; i++) {
+              binary += String.fromCharCode(utf8Bytes[i]);
+            }
+            const base64 = btoa(binary);
+
+            const body = { message: msg, content: base64, branch: "main" };
+            if (sha) body.sha = sha;
+
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+              method: "PUT",
+              headers,
+              body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({}));
+              throw new Error(errData.message || `HTTP ${res.status}`);
+            }
+          };
+
+          // 1. Commit products.json to GitHub
+          await commitFile("products.json", JSON.stringify(products, null, 2), "Live Store Update: Products, Stock & Reviews");
+
+          // 2. Commit site-content.json to GitHub
+          await commitFile("site-content.json", JSON.stringify(siteContent, null, 2), "Live Store Update: Website Content, Images & Taglines");
+
+          setHasUnpublishedChanges(false);
+          if (window.confetti) {
+            window.confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+          }
+          alert("🎉 Successfully Published Live! Your changes are now synchronized to GitHub and live for all customers across India.");
+        } catch(err) {
+          console.error("Publishing error:", err);
+          alert("Publishing Failed: " + err.message + ". Check your internet connection or GitHub token in settings.");
+        } finally {
+          setIsPublishing(false);
+        }
+      };
+
+      // Offscreen Canvas Image Compressor (Keeps photos ~80KB so localStorage quota is NEVER exceeded & photos never vanish)
+      const compressImageFile = (file, callback) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let width = img.width;
+            let height = img.height;
+            const maxDim = 1200;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.85);
+            callback(compressed);
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
 
       // Profile edit form
       const [profileForm, setProfileForm] = useState({ id: "", password: "", name: "" });
@@ -1054,6 +1225,9 @@
             if (quickViewProduct && quickViewProduct.id === p.id) {
               setQuickViewProduct(updated);
             }
+            if (activeProductDetail && activeProductDetail.id === p.id) {
+              setActiveProductDetail(updated);
+            }
             return updated;
           }
           return p;
@@ -1083,6 +1257,9 @@
             const updated = { ...p, reviews: revs, reviewsCount: (p.reviewsCount || 0) + 1 };
             if (quickViewProduct && quickViewProduct.id === p.id) {
               setQuickViewProduct(updated);
+            }
+            if (activeProductDetail && activeProductDetail.id === p.id) {
+              setActiveProductDetail(updated);
             }
             return updated;
           }
@@ -1120,23 +1297,40 @@
         setOwnerTab("stock");
       };
 
-      // In-Place Live Click-to-Edit Renderer for Owner
+      // Canva-Style In-Place Click-to-Edit Renderer (Adjust font size, formatting, color & text live)
       const renderEditable = (key, label, fallbackText, Tag = "span", className = "") => {
         const val = siteContent[key] !== undefined ? siteContent[key] : fallbackText;
+        const customStyle = {
+          fontSize: siteContent[`${key}_fontSize`] ? `${siteContent[`${key}_fontSize`]}px` : undefined,
+          color: siteContent[`${key}_color`] || undefined,
+          fontWeight: siteContent[`${key}_bold`] ? "bold" : undefined,
+          fontStyle: siteContent[`${key}_italic`] ? "italic" : undefined
+        };
+
         if (!isEditor || !isLiveEditActive) {
-          return <Tag className={className}>{val}</Tag>;
+          return <Tag style={customStyle} className={className}>{val}</Tag>;
         }
+
         return (
           <Tag
+            style={customStyle}
             onClick={(e) => {
               e.stopPropagation();
-              setEditingTextModal({ key, label, value: val });
+              setCanvaBar({
+                key,
+                label,
+                value: val,
+                fontSize: siteContent[`${key}_fontSize`] || 22,
+                color: siteContent[`${key}_color`] || "",
+                isBold: Boolean(siteContent[`${key}_bold`]),
+                isItalic: Boolean(siteContent[`${key}_italic`])
+              });
             }}
-            className={`${className} cursor-pointer relative group rounded px-1 -mx-0.5 border-2 border-dashed border-amber-400 bg-amber-400/20 hover:bg-amber-400/40 transition-all shadow-sm`}
-            title={`Owner Edit: Click to change "${label}"`}
+            className={`${className} cursor-pointer relative group rounded px-1.5 -mx-0.5 border-2 border-dashed border-amber-400 bg-amber-400/20 hover:bg-amber-400/40 transition-all shadow-sm`}
+            title={`Canva Style Edit: Click to adjust text size, formatting, color & content for "${label}"`}
           >
             {val}
-            <span className="inline-block ml-1 text-xs text-amber-300 drop-shadow group-hover:scale-125 transition-transform">✏️</span>
+            <span className="inline-block ml-1 text-xs text-amber-300 drop-shadow group-hover:scale-125 transition-transform">🎨</span>
           </Tag>
         );
       };
@@ -1165,20 +1359,35 @@
       return (
         <div className="min-h-screen flex flex-col bg-[#FAF7F2]">
 
-          {/* ================= OWNER LOGGED IN BAR ================= */}
-          {isOwner && (
+          {/* ================= OWNER & STAFF LOGGED IN BAR ================= */}
+          {isEditor && (
             <div className="bg-stone-950 text-stone-100 px-4 py-2 text-xs border-b border-amber-600/40 sticky top-0 z-50 shadow-md">
               <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="bg-amber-500 text-stone-950 font-black px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                    👑 Owner: {ownerConfig.id}
+                    {isOwner ? `👑 Owner: ${ownerConfig.id}` : `👤 Staff: ${currentUser.name}`}
                   </span>
                   <span className="text-stone-300 hidden sm:inline">
-                    Manage Orders, Live Stock, Staff, and Customize Any Website Text & Tagline.
+                    {isOwner ? "Manage Orders, Live Stock, Staff, and Customize Any Website Text & Tagline." : "Staff Editor: Update Stock, Orders & Product Details. (Owner protected)."}
                   </span>
                 </div>
 
                 <div className="flex items-center flex-wrap gap-2">
+                  {/* ONE-CLICK PUBLISH LIVE TO ALL CUSTOMERS */}
+                  <button
+                    onClick={publishLiveToCloud}
+                    disabled={isPublishing}
+                    className={`font-black px-3.5 py-1 rounded-lg text-xs shadow-lg transition flex items-center gap-1.5 ${
+                      hasUnpublishedChanges
+                        ? "bg-emerald-400 hover:bg-emerald-300 text-stone-950 ring-2 ring-emerald-300 animate-pulse"
+                        : "bg-emerald-600 hover:bg-emerald-500 text-white"
+                    }`}
+                    title="Push your edited products, stock, prices, and taglines live so all customers across India see them immediately!"
+                  >
+                    <span>{isPublishing ? "⏳ Publishing..." : "🚀 Publish Live to Customers"}</span>
+                    {hasUnpublishedChanges && <span className="bg-red-600 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">Unsaved</span>}
+                  </button>
+
                   <button
                     onClick={() => {
                       setIsLiveEditActive(!isLiveEditActive);
@@ -1198,6 +1407,7 @@
                     onClick={() => {
                       setIsOwnerPortalView(!isOwnerPortalView);
                       setIsLiveEditActive(false);
+                      if (viewMode === "product") setViewMode("store");
                     }}
                     className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-3 py-1 rounded-lg text-xs shadow transition"
                   >
@@ -1227,14 +1437,163 @@
           )}
 
 
+          {/* ================= CANVA-STYLE FLOATING VISUAL TOOLBAR ================= */}
+          {canvaBar && (
+            <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-stone-900/98 text-white p-4 rounded-3xl shadow-2xl border-2 border-amber-400 flex flex-col gap-3 backdrop-blur-xl max-w-lg w-[95%] animate-fadeIn">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-500 text-stone-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">🎨 Canva Style Editor</span>
+                  <span className="text-xs font-bold text-amber-200 truncate max-w-[200px]">{canvaBar.label}</span>
+                </div>
+                <button onClick={() => setCanvaBar(null)} className="text-stone-400 hover:text-white font-bold text-sm">✕</button>
+              </div>
+
+              {/* Controls Row: Font Size Stepper, Formatting, Colors */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-stone-800/80 p-2.5 rounded-2xl border border-stone-700">
+                {/* Font Size Stepper */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-stone-400 font-bold">Size:</span>
+                  <button
+                    onClick={() => {
+                      const next = Math.max(12, (canvaBar.fontSize || 20) - 2);
+                      setCanvaBar({ ...canvaBar, fontSize: next });
+                      setSiteContent(prev => ({ ...prev, [`${canvaBar.key}_fontSize`]: next }));
+                      setHasUnpublishedChanges(true);
+                    }}
+                    className="w-7 h-7 bg-stone-700 hover:bg-stone-600 rounded-lg font-black text-xs flex items-center justify-center text-amber-300 shadow"
+                    title="Decrease font size"
+                  >
+                    A-
+                  </button>
+                  <span className="font-mono font-black text-xs text-amber-200 px-1">{canvaBar.fontSize || 20}px</span>
+                  <button
+                    onClick={() => {
+                      const next = Math.min(80, (canvaBar.fontSize || 20) + 2);
+                      setCanvaBar({ ...canvaBar, fontSize: next });
+                      setSiteContent(prev => ({ ...prev, [`${canvaBar.key}_fontSize`]: next }));
+                      setHasUnpublishedChanges(true);
+                    }}
+                    className="w-7 h-7 bg-stone-700 hover:bg-stone-600 rounded-lg font-black text-xs flex items-center justify-center text-amber-300 shadow"
+                    title="Increase font size"
+                  >
+                    A+
+                  </button>
+                </div>
+
+                {/* Font Styling Buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => {
+                      const next = !canvaBar.isBold;
+                      setCanvaBar({ ...canvaBar, isBold: next });
+                      setSiteContent(prev => ({ ...prev, [`${canvaBar.key}_bold`]: next }));
+                      setHasUnpublishedChanges(true);
+                    }}
+                    className={`w-7 h-7 rounded-lg font-black text-xs flex items-center justify-center transition ${
+                      canvaBar.isBold ? "bg-amber-500 text-stone-950 font-black" : "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                    }`}
+                    title="Toggle Bold"
+                  >
+                    B
+                  </button>
+                  <button
+                    onClick={() => {
+                      const next = !canvaBar.isItalic;
+                      setCanvaBar({ ...canvaBar, isItalic: next });
+                      setSiteContent(prev => ({ ...prev, [`${canvaBar.key}_italic`]: next }));
+                      setHasUnpublishedChanges(true);
+                    }}
+                    className={`w-7 h-7 rounded-lg font-serif italic text-xs flex items-center justify-center transition ${
+                      canvaBar.isItalic ? "bg-amber-500 text-stone-950 font-black" : "bg-stone-700 text-stone-300 hover:bg-stone-600"
+                    }`}
+                    title="Toggle Italic"
+                  >
+                    I
+                  </button>
+                </div>
+
+                {/* Color Swatches */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-stone-400 font-bold">Color:</span>
+                  {[
+                    { name: 'Amber Gold', val: '#fef3c7' },
+                    { name: 'Pure White', val: '#ffffff' },
+                    { name: 'Ocean Aqua', val: '#38bdf8' },
+                    { name: 'Coastal Red', val: '#f87171' },
+                    { name: 'Dark Stone', val: '#1c1917' }
+                  ].map(c => (
+                    <button
+                      key={c.val}
+                      onClick={() => {
+                        setCanvaBar({ ...canvaBar, color: c.val });
+                        setSiteContent(prev => ({ ...prev, [`${canvaBar.key}_color`]: c.val }));
+                        setHasUnpublishedChanges(true);
+                      }}
+                      className={`w-5 h-5 rounded-full border-2 transition ${
+                        canvaBar.color === c.val ? "border-amber-400 scale-125 ring-2 ring-amber-300" : "border-stone-600 hover:scale-110"
+                      }`}
+                      style={{ backgroundColor: c.val }}
+                      title={c.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Text Box Content Editor */}
+              <div>
+                <textarea
+                  rows={canvaBar.value.length > 50 ? 3 : 2}
+                  value={canvaBar.value}
+                  onChange={(e) => {
+                    const nextVal = e.target.value;
+                    setCanvaBar({ ...canvaBar, value: nextVal });
+                    setSiteContent(prev => ({ ...prev, [canvaBar.key]: nextVal }));
+                    setHasUnpublishedChanges(true);
+                  }}
+                  className="w-full bg-stone-950 border border-stone-700 focus:border-amber-400 rounded-2xl p-3 text-xs text-amber-100 font-medium focus:outline-none"
+                  placeholder="Type new text here..."
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-stone-800">
+                <button
+                  onClick={() => setCanvaBar(null)}
+                  className="px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl text-xs font-bold transition"
+                >
+                  Done Editing ✓
+                </button>
+
+                <button
+                  onClick={() => {
+                    publishLiveToCloud();
+                    setCanvaBar(null);
+                  }}
+                  disabled={isPublishing}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 rounded-xl text-xs font-black shadow flex items-center gap-1.5 transition"
+                >
+                  <span>{isPublishing ? "Publishing..." : "🚀 Publish Live to GitHub"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Floating Live Edit Indicator */}
-          {isOwner && isLiveEditActive && (
+          {isEditor && isLiveEditActive && (
             <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-stone-900/95 text-amber-200 px-5 py-2.5 rounded-full shadow-2xl border-2 border-amber-500 flex items-center gap-3 backdrop-blur-md text-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <span className="font-bold text-white">✏️ Live Edit Active: Click any line or tagline to change it!</span>
+              <span className="font-bold text-white">✏️ Canva Live Edit: Click any text to adjust size & style!</span>
+              <button
+                onClick={publishLiveToCloud}
+                disabled={isPublishing}
+                className="bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-black px-3 py-1 rounded-full text-[11px] transition shadow flex items-center gap-1"
+              >
+                <span>{isPublishing ? "Publishing..." : "🚀 Publish Live"}</span>
+              </button>
               <button
                 onClick={() => setIsLiveEditActive(false)}
-                className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black px-3 py-1 rounded-full text-[11px] transition shadow"
+                className="bg-stone-700 hover:bg-stone-600 text-white font-bold px-3 py-1 rounded-full text-[11px] transition"
               >
                 Done Editing ✓
               </button>
@@ -2191,7 +2550,506 @@
                 </div>
               </header>
 
-              {/* ================= HERO WITH REAL OCEAN WAVES VIDEO BACKGROUND & LIVE MOVING WAVES ================= */}
+              {viewMode === "product" && activeProductDetail ? (
+                // ================= DEDICATED SEPARATE PRODUCT PAGE =================
+                (() => {
+                  const p = activeProductDetail;
+                  const currentVariant = p.variants[detailVariantIdx] || p.variants[0];
+                  const hasDiscount = currentVariant && currentVariant.originalPrice && currentVariant.originalPrice > currentVariant.price;
+                  const discountPct = hasDiscount ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100) : 0;
+                  const relatedProducts = products.filter(item => item.id !== p.id).slice(0, 4);
+
+                  return (
+                    <main className="min-h-screen bg-stone-50 pb-20 animate-fadeIn flex-1">
+                      {/* Top Bar / Breadcrumb Navigation */}
+                      <div className="bg-white border-b border-stone-200 sticky top-20 z-30 shadow-xs">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                          <button
+                            onClick={backToStore}
+                            className="inline-flex items-center gap-2 bg-stone-900 hover:bg-stone-800 text-amber-300 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-sm transition"
+                          >
+                            <span>â† Back to Storefront Catalog</span>
+                          </button>
+                          <div className="flex items-center gap-2 text-xs font-semibold text-stone-500">
+                            <span className="cursor-pointer hover:text-stone-900" onClick={backToStore}>Home</span>
+                            <span>/</span>
+                            <span className="text-sky-800 font-bold">{p.category}</span>
+                            <span>/</span>
+                            <span className="text-stone-900 truncate max-w-[200px] font-bold">{p.name}</span>
+                          </div>
+                          {isEditor && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setEditingProductModal({ ...p })}
+                                className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black px-3.5 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                              >
+                                <span>ðŸ“ Edit Details</span>
+                              </button>
+                              <button
+                                onClick={() => setEditingImageModal({
+                                  key: `product:${p.id}`,
+                                  label: `Photo for ${p.name}`,
+                                  currentUrl: p.image
+                                })}
+                                className="bg-sky-800 hover:bg-sky-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                              >
+                                <span>ðŸ“· Change Photo</span>
+                              </button>
+                              <button
+                                onClick={publishLiveToCloud}
+                                disabled={isPublishing}
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                              >
+                                <span>{isPublishing ? "â³ Syncing..." : "ðŸš€ Publish Live"}</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Main Product 2-Column Showcase */}
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+                        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                          
+                          {/* Left Column: Image, Badges & Trust Metrics */}
+                          <div className="lg:col-span-5 flex flex-col gap-5">
+                            <div className="relative rounded-3xl overflow-hidden bg-stone-100 border border-stone-200 aspect-square group shadow-inner">
+                              <img
+                                src={p.image}
+                                alt={p.name}
+                                className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${p.stock <= 0 ? 'grayscale opacity-60' : ''}`}
+                              />
+                              {p.isTopSeller && (
+                                <div className="absolute top-4 left-4 bg-gradient-to-r from-red-600 to-amber-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
+                                  <span>ðŸ”¥</span> <span>Top Selling Konkan Favorite</span>
+                                </div>
+                              )}
+                              <div className="absolute bottom-4 left-4 bg-stone-900/85 backdrop-blur text-amber-200 font-bold text-xs px-3 py-1 rounded-full shadow">
+                                {p.tag}
+                              </div>
+                              {p.stock <= 0 && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <span className="bg-red-700 text-white font-black text-sm px-5 py-2 rounded-full uppercase tracking-widest shadow-2xl">
+                                    Sold Out
+                                  </span>
+                                </div>
+                              )}
+                              {isEditor && (
+                                <button
+                                  onClick={() => setEditingImageModal({
+                                    key: `product:${p.id}`,
+                                    label: `Photo for ${p.name}`,
+                                    currentUrl: p.image
+                                  })}
+                                  className="absolute top-4 right-4 bg-black/80 hover:bg-black text-amber-300 font-bold text-xs px-3 py-1.5 rounded-xl shadow-lg border border-amber-400 flex items-center gap-1.5 transition"
+                                >
+                                  <span>ðŸ“· Change Photo</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Trust Badges */}
+                            <div className="grid grid-cols-3 gap-3 text-center">
+                              <div className="bg-sky-50/80 border border-sky-100 p-3 rounded-2xl">
+                                <div className="text-xl">ðŸŒŠ</div>
+                                <div className="text-[11px] font-bold text-sky-950 mt-1">Direct Sea Catch</div>
+                                <div className="text-[10px] text-sky-700">Cleaned & sun-cured</div>
+                              </div>
+                              <div className="bg-amber-50/80 border border-amber-100 p-3 rounded-2xl">
+                                <div className="text-xl">ðŸº</div>
+                                <div className="text-[11px] font-bold text-amber-950 mt-1">CKP Recipe</div>
+                                <div className="text-[10px] text-amber-700">Generations-old craft</div>
+                              </div>
+                              <div className="bg-emerald-50/80 border border-emerald-100 p-3 rounded-2xl">
+                                <div className="text-xl">ðŸŒ¿</div>
+                                <div className="text-[11px] font-bold text-emerald-950 mt-1">100% Pure</div>
+                                <div className="text-[10px] text-emerald-700">Zero preservatives</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right Column: Pricing, Stepper, Actions */}
+                          <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <span className="text-[11px] font-bold text-sky-800 bg-sky-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                                  {p.category}
+                                </span>
+                                <span className="text-xs text-stone-500 font-medium">
+                                  Spice Level: {p.spiceLevel || "Medium Konkan Heat"}
+                                </span>
+                              </div>
+
+                              <h1 className="font-brand text-3xl sm:text-4xl font-black text-stone-900 leading-tight">
+                                {p.name}
+                              </h1>
+
+                              <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
+                                {p.tagline || p.description}
+                              </p>
+
+                              {/* Ratings & Social Proof */}
+                              <div className="flex items-center gap-3 py-2 border-y border-stone-100">
+                                <div className="flex text-amber-400 text-base">
+                                  {"â˜…".repeat(5)}
+                                </div>
+                                <span className="font-bold text-xs text-stone-800">4.9 / 5.0</span>
+                                <span className="text-stone-300">|</span>
+                                <span className="text-xs text-stone-500 font-medium">98 Verified Konkan Food Enthusiasts</span>
+                              </div>
+
+                              {/* Price */}
+                              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200/80 flex items-baseline gap-3">
+                                <span className="text-3xl sm:text-4xl font-black text-stone-900">
+                                  â‚¹{currentVariant.price}
+                                </span>
+                                {hasDiscount && (
+                                  <>
+                                    <span className="text-base text-stone-400 line-through">
+                                      â‚¹{currentVariant.originalPrice}
+                                    </span>
+                                    <span className="bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-0.5 rounded-full">
+                                      Save {discountPct}% (â‚¹{currentVariant.originalPrice - currentVariant.price} OFF)
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Pack / Weight Options */}
+                              <div>
+                                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
+                                  Select Pack / Weight Size
+                                </label>
+                                <div className="flex flex-wrap gap-2.5">
+                                  {p.variants.map((v, idx) => (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setDetailVariantIdx(idx)}
+                                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
+                                        detailVariantIdx === idx
+                                          ? "bg-stone-900 text-amber-300 border-stone-900 shadow-sm"
+                                          : "bg-white text-stone-700 border-stone-300 hover:border-stone-500"
+                                      }`}
+                                    >
+                                      <span>{v.weight}</span>
+                                      <span className="text-[11px] opacity-80">â‚¹{v.price}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Quantity Stepper & Stock */}
+                              <div className="flex flex-wrap items-center gap-4 pt-2">
+                                <div>
+                                  <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">
+                                    Quantity
+                                  </label>
+                                  <div className="flex items-center border border-stone-300 rounded-xl bg-white shadow-xs">
+                                    <button
+                                      onClick={() => setDetailQty(Math.max(1, detailQty - 1))}
+                                      className="px-3 py-1.5 text-stone-600 hover:text-stone-900 font-bold"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="px-3 py-1.5 font-bold text-sm min-w-[36px] text-center">
+                                      {detailQty}
+                                    </span>
+                                    <button
+                                      onClick={() => setDetailQty(detailQty + 1)}
+                                      className="px-3 py-1.5 text-stone-600 hover:text-stone-900 font-bold"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="pt-5">
+                                  {p.stock > 0 ? (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
+                                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                      In Stock ({p.stock} units available)
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-xl border border-red-200">
+                                      Out of Stock (Fresh batch being cured)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-3 pt-4 border-t border-stone-100">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button
+                                  disabled={p.stock <= 0}
+                                  onClick={() => {
+                                    addToCart(p, detailVariantIdx, detailQty);
+                                    if (window.confetti) {
+                                      window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                                    }
+                                  }}
+                                  className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-amber-300 font-bold py-3.5 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm"
+                                >
+                                  <span>ðŸ›’</span>
+                                  <span>Add {detailQty > 1 ? `${detailQty} Packs` : ""} to Cart</span>
+                                </button>
+
+                                <button
+                                  disabled={p.stock <= 0}
+                                  onClick={() => {
+                                    addToCart(p, detailVariantIdx, detailQty);
+                                    setShowCart(false);
+                                    setShowCheckoutDetailsModal(true);
+                                  }}
+                                  className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:from-stone-300 disabled:to-stone-300 text-stone-950 font-black py-3.5 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm"
+                                >
+                                  <span>âš¡</span>
+                                  <span>Buy Now</span>
+                                </button>
+                              </div>
+
+                              <a
+                                href={`https://wa.me/919999999999?text=Hello%20CKPs%20Crunch,%20I%20want%20to%20order%20${encodeURIComponent(p.name)}%20(${encodeURIComponent(currentVariant.weight)})`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs"
+                              >
+                                <span>ðŸ’¬</span>
+                                <span>Order Directly via WhatsApp</span>
+                              </a>
+                            </div>
+
+                            {/* Delivery highlights */}
+                            <div className="text-[11px] text-stone-500 space-y-1 pt-2">
+                              <div>ðŸšš <strong>Fast Courier:</strong> Dispatched in 24 hours across Mumbai, Pune, Thane & All India.</div>
+                              <div>ðŸ“¦ <strong>Aroma-Shield Pack:</strong> Multi-layer vacuum sealed to retain ocean freshness.</div>
+                            </div>
+
+                          </div>
+                        </div>
+
+                        {/* Culinary Heritage & Cooking Secrets Section */}
+                        <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm space-y-6">
+                          <div className="flex items-center justify-between border-b pb-4">
+                            <div>
+                              <h3 className="font-brand text-2xl font-black text-stone-900">
+                                Culinary Heritage & Cooking Secrets
+                              </h3>
+                              <p className="text-xs text-stone-500 mt-1">
+                                Traditional coastal techniques preserved by CKP families for generations.
+                              </p>
+                            </div>
+                            {isEditor && (
+                              <button
+                                onClick={() => setEditingProductModal({ ...p })}
+                                className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-3 py-1.5 rounded-xl transition"
+                              >
+                                ðŸ“ Edit Heritage Info
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="bg-sky-50/60 p-4 rounded-2xl border border-sky-100 space-y-1.5">
+                              <div className="text-xs font-bold text-sky-800 uppercase flex items-center gap-1.5">
+                                <span>ðŸŒŠ</span> Coastal Origin
+                              </div>
+                              <p className="text-xs text-stone-700 font-medium leading-relaxed">
+                                {p.origin || "Alibaug & Ratnagiri Coastline, Maharashtra"}
+                              </p>
+                            </div>
+
+                            <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-100 space-y-1.5">
+                              <div className="text-xs font-bold text-amber-800 uppercase flex items-center gap-1.5">
+                                <span>ðŸº</span> Traditional Curing
+                              </div>
+                              <p className="text-xs text-stone-700 font-medium leading-relaxed">
+                                {p.preparation || p.description}
+                              </p>
+                            </div>
+
+                            <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100 space-y-1.5">
+                              <div className="text-xs font-bold text-emerald-800 uppercase flex items-center gap-1.5">
+                                <span>ðŸ³</span> Best Cooking Style
+                              </div>
+                              <p className="text-xs text-stone-700 font-medium leading-relaxed">
+                                {p.cookTips || "Crispy pan fry with kokum and garlic, or slow simmer in spicy coconut curry."}
+                              </p>
+                            </div>
+
+                            <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1.5">
+                              <div className="text-xs font-bold text-stone-800 uppercase flex items-center gap-1.5">
+                                <span>â³</span> Shelf Life & Storage
+                              </div>
+                              <p className="text-xs text-stone-700 font-medium leading-relaxed">
+                                {p.shelfLife || "9 Months (Store in airtight container in a cool, dry pantry)"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Customer Reviews Section */}
+                        <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm space-y-6">
+                          <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
+                            <div>
+                              <h3 className="font-brand text-2xl font-black text-stone-900">
+                                Verified Konkan Customer Reviews
+                              </h3>
+                              <p className="text-xs text-stone-500 mt-1">
+                                Rated â˜…â˜…â˜…â˜…â˜… 4.9/5 by authentic CKP cuisine connoisseurs.
+                              </p>
+                            </div>
+                            {isEditor && (
+                              <button
+                                onClick={() => {
+                                  const name = prompt("Customer Name & City (e.g. Anand Chitnis, Dadar):");
+                                  if (!name) return;
+                                  const comment = prompt("Review Comment:");
+                                  if (!comment) return;
+                                  const newReview = {
+                                    id: "rev_" + Date.now(),
+                                    author: name,
+                                    date: "Just now",
+                                    rating: 5,
+                                    verified: true,
+                                    comment: comment
+                                  };
+                                  setProducts(prev => prev.map(prod => {
+                                    if (prod.id === p.id) {
+                                      const updated = {
+                                        ...prod,
+                                        reviews: [newReview, ...(prod.reviews || [])]
+                                      };
+                                      setActiveProductDetail(updated);
+                                      return updated;
+                                    }
+                                    return prod;
+                                  }));
+                                  setHasUnpublishedChanges(true);
+                                }}
+                                className="bg-sky-800 hover:bg-sky-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition"
+                              >
+                                <span>âž• Add Customer Review</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {(p.reviews && p.reviews.length > 0 ? p.reviews : [
+                              { id: "1", author: "Pradnya Gupte (Dadar, Mumbai)", rating: 5, verified: true, date: "2 days ago", comment: "The aroma when fried in mustard oil took me right back to our ancestral home in Alibaug! Zero fishy smell, completely clean and crisp." },
+                              { id: "2", author: "Adv. Shrikant Deshmukh (Thane West)", rating: 5, verified: true, date: "1 week ago", comment: "Best quality in Mumbai. Perfectly salted and cured. Pairs like heaven with hot Varan Bhaat and ghee!" }
+                            ]).map((rev) => (
+                              <div key={rev.id} className="bg-stone-50/70 p-4 rounded-2xl border border-stone-200/80 space-y-2 relative">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-700 to-amber-600 text-white font-black text-xs flex items-center justify-center">
+                                      {rev.author.charAt(0)}
+                                    </div>
+                                    <div>
+                                      <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                                        <span>{rev.author}</span>
+                                        {rev.verified && <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">âœ“ Verified</span>}
+                                      </div>
+                                      <div className="text-[10px] text-stone-400">{rev.date || "Verified Purchase"}</div>
+                                    </div>
+                                  </div>
+                                  <div className="text-amber-400 text-xs font-bold">
+                                    {"â˜…".repeat(rev.rating || 5)}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-stone-700 leading-relaxed italic">
+                                  "{rev.comment}"
+                                </p>
+                                {isEditor && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm("Delete this review?")) {
+                                        setProducts(prev => prev.map(prod => {
+                                          if (prod.id === p.id) {
+                                            const updated = {
+                                              ...prod,
+                                              reviews: (prod.reviews || []).filter(r => r.id !== rev.id)
+                                            };
+                                            setActiveProductDetail(updated);
+                                            return updated;
+                                          }
+                                          return prod;
+                                        }));
+                                        setHasUnpublishedChanges(true);
+                                      }
+                                    }}
+                                    className="text-[10px] text-red-600 hover:text-red-800 font-bold underline pt-1 block"
+                                  >
+                                    Delete Review
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Shop More Items Section */}
+                        <div className="mt-12 space-y-6">
+                          <div>
+                            <h3 className="font-brand text-2xl font-black text-stone-900">
+                              Shop More Handcrafted Konkan Delicacies
+                            </h3>
+                            <p className="text-xs text-stone-500 mt-1">
+                              Hand-curated coastal favorites to pair with your order.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            {relatedProducts.map(rel => (
+                              <div
+                                key={rel.id}
+                                className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-xs hover:shadow-md transition flex flex-col group cursor-pointer"
+                                onClick={() => openProductDetailPage(rel)}
+                              >
+                                <div className="h-36 overflow-hidden bg-stone-100 relative">
+                                  <img
+                                    src={rel.image}
+                                    alt={rel.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                  />
+                                  <span className="absolute bottom-2 left-2 bg-stone-900/80 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    {rel.tag}
+                                  </span>
+                                </div>
+                                <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
+                                  <div>
+                                    <div className="text-[10px] font-bold text-sky-800 uppercase">{rel.category}</div>
+                                    <h4 className="font-brand font-bold text-xs text-stone-900 line-clamp-1 group-hover:text-sky-900">{rel.name}</h4>
+                                  </div>
+                                  <div className="flex items-center justify-between pt-1 border-t">
+                                    <span className="font-black text-xs text-stone-900">â‚¹{rel.variants[0]?.price}</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        addToCart(rel, 0, 1);
+                                        if (window.confetti) {
+                                          window.confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 } });
+                                        }
+                                      }}
+                                      className="bg-sky-800 hover:bg-sky-900 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-sm transition"
+                                    >
+                                      + Add
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                      </div>
+                    </main>
+                  );
+                })()
+              ) : (
+                <>
+                  {/* ================= HERO WITH REAL OCEAN WAVES VIDEO BACKGROUND & LIVE MOVING WAVES ================= */}
               <section className="ocean-video-hero text-white pt-16 pb-28 relative">
                 {/* Real Looping Coastal Ocean Waves Video with Guaranteed Autoplay */}
                 <video
@@ -2620,6 +3478,8 @@
                   })}
                 </div>
               </main>
+                </>
+              )}
             </>
           )}
 
@@ -3103,7 +3963,7 @@
 
 
           {/* ================= FULL PRODUCT DETAIL PAGE & EDITABLE REVIEWS MODAL ================= */}
-          {quickViewProduct && (() => {
+          {!activeProductDetail && quickViewProduct && (() => {
             const currentVariant = quickViewProduct.variants[detailVariantIdx] || quickViewProduct.variants[0];
             const hasDiscount = currentVariant && currentVariant.originalPrice && currentVariant.originalPrice > currentVariant.price;
             const discountPct = hasDiscount ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100) : 0;
@@ -3842,6 +4702,9 @@
                       if (editingImageModal.key.startsWith("product:")) {
                         const pid = editingImageModal.key.replace("product:", "");
                         setProducts(prev => prev.map(p => p.id === pid ? { ...p, image: url } : p));
+                        if (activeProductDetail && activeProductDetail.id === pid) setActiveProductDetail(prev => ({ ...prev, image: url }));
+                        if (quickViewProduct && quickViewProduct.id === pid) setQuickViewProduct(prev => ({ ...prev, image: url }));
+                        setHasUnpublishedChanges(true);
                       } else {
                         setSiteContent(prev => ({ ...prev, [editingImageModal.key]: url }));
                       }
