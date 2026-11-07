@@ -1,0 +1,3156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CKP's Crunch | Coastal Dry Fish, Ancestral Spices & Barni Pickles</title>
+  <meta name="description" content="CKP's Crunch - Direct coastal orders. Crispy sun-dried fish, stone-ground masalas, and earthen barni pickles." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ckp: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              500: '#ea580c',
+              600: '#c2410c',
+              700: '#9a3412',
+              800: '#7c2d12',
+              900: '#431407',
+              ocean: '#0c4a6e',
+              deepsea: '#082f49',
+              wave: '#0284c7'
+            }
+          },
+          fontFamily: {
+            brand: ['"Cinzel"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            hand: ['"Caveat"', 'cursive']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+    ::-webkit-scrollbar { width: 7px; }
+    ::-webkit-scrollbar-track { background: #FAF7F2; }
+    ::-webkit-scrollbar-thumb { background: #0284c7; border-radius: 4px; }
+
+    /* Realistic Ocean Waves Video Background */
+    .ocean-video-hero {
+      position: relative;
+      background: #082f49;
+      overflow: hidden;
+      min-height: 400px;
+    }
+    .ocean-video-hero video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
+      opacity: 0.82;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .ocean-video-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(5, 30, 52, 0.65) 0%, rgba(8, 47, 73, 0.25) 45%, rgba(5, 30, 52, 0.85) 100%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Majestic Moving Ocean Waves Animation (Smooth 60FPS Continuous Surf) */
+    @keyframes waveRollFront {
+      0% { transform: translateX(0); }
+      50% { transform: translateX(-25%) scaleY(1.18); }
+      100% { transform: translateX(-50%); }
+    }
+    @keyframes waveRollBack {
+      0% { transform: translateX(-50%); }
+      50% { transform: translateX(-25%) scaleY(0.82); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes waveFoamSurf {
+      0% { transform: translateX(0) translateY(0); }
+      25% { transform: translateX(-12%) translateY(-5px); }
+      50% { transform: translateX(-25%) translateY(3px) scaleY(1.25); }
+      75% { transform: translateX(-37%) translateY(-4px); }
+      100% { transform: translateX(-50%) translateY(0); }
+    }
+    .hero-waves-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 140px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .wave-svg {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 100%;
+    }
+    .wave-layer-deep {
+      animation: waveRollFront 14s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+      opacity: 0.90;
+    }
+    .wave-layer-mid {
+      animation: waveRollBack 9s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+      opacity: 0.70;
+    }
+    .wave-layer-front {
+      animation: waveRollFront 6s cubic-bezier(0.36, 0.45, 0.63, 0.53) infinite;
+      opacity: 0.85;
+    }
+    .wave-layer-foam {
+      animation: waveFoamSurf 6s ease-in-out infinite;
+      opacity: 0.95;
+    }
+
+    /* Floating maritime elements */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+    .float-item {
+      animation: floatSlow 5s ease-in-out infinite;
+    }
+
+    /* Pulse Radar Animation for Auto-fetching payment */
+    @keyframes radarPulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .radar-pulse {
+      animation: radarPulse 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#FAF7F2] text-[#29221D] font-sans antialiased selection:bg-sky-200 selection:text-sky-950">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    // Default Products Catalog
+    const DEFAULT_CATALOG = [
+      // 1. DRY FISH
+      {
+        id: "ckp-df-01",
+        name: "Crispy Cleaned Sukha Bombil",
+        tagline: "Sun-Dried Konkan Gold • Zero Sand",
+        category: "Dry Fish",
+        tag: "Bestseller 🐟",
+        spiceLevel: 2,
+        stock: 45,
+        rating: 5.0,
+        reviewsCount: 380,
+        image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "250g Pack", price: 195, originalPrice: 250 },
+          { size: "500g Value Pack", price: 370, originalPrice: 470 }
+        ],
+        description: "Fresh coastal Bombay Duck gutted, salted, and bamboo sun-dried. Fries up crispier than wafers!"
+      },
+      {
+        id: "ckp-df-02",
+        name: "Wild Sun-Dried Baby Kolambi (Prawns)",
+        tagline: "Cleaned Shells • Sweet Umami Crunch",
+        category: "Dry Fish",
+        tag: "Coastal Special 🦐",
+        spiceLevel: 2,
+        stock: 30,
+        rating: 4.9,
+        reviewsCount: 290,
+        image: "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "200g Pouch", price: 230, originalPrice: 290 },
+          { size: "500g Pack", price: 540, originalPrice: 680 }
+        ],
+        description: "Fresh caught sea prawns dried naturally under the Konkan sun. Ideal for kismoor and spicy tawa fry."
+      },
+      {
+        id: "ckp-df-03",
+        name: "Authentic Sun-Dried Jawla / Karandi",
+        tagline: "High Calcium • Rich Konkani Flavor",
+        category: "Dry Fish",
+        tag: "Traditional 🌊",
+        spiceLevel: 2,
+        stock: 35,
+        rating: 4.8,
+        reviewsCount: 210,
+        image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "250g Pack", price: 175, originalPrice: 220 },
+          { size: "500g Pack", price: 330, originalPrice: 420 }
+        ],
+        description: "Tiny micro-shrimps sun-cured naturally. CKP kitchen must-have for Jawla Vangi curry."
+      },
+      {
+        id: "ckp-df-04",
+        name: "CKP Fiery Kolambi (Prawn) Achaar",
+        tagline: "Real Fried Prawns in Gingelly Oil",
+        category: "Dry Fish",
+        tag: "Chef's Secret 🌶️",
+        spiceLevel: 4,
+        stock: 25,
+        rating: 5.0,
+        reviewsCount: 340,
+        image: "https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "250g Glass Jar", price: 340, originalPrice: 420 },
+          { size: "500g Jar", price: 620, originalPrice: 780 }
+        ],
+        description: "Plump prawns crisp-fried with roasted masalas, whole garlic, and aged natural coconut vinegar."
+      },
+
+      // 2. SPICES
+      {
+        id: "ckp-sp-01",
+        name: "CKP Royal Garam Masala (18-Spices)",
+        tagline: "Stone-Pounded Dagad Phool & Nagkesar",
+        category: "Spices",
+        tag: "Ancestral Recipe 🌿",
+        spiceLevel: 3,
+        stock: 50,
+        rating: 5.0,
+        reviewsCount: 520,
+        image: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "100g Pouch", price: 155, originalPrice: 195 },
+          { size: "250g Can", price: 340, originalPrice: 420 }
+        ],
+        description: "Slow-roasted whole spices ground on stone. Locks in volatile essential oils for royal aroma."
+      },
+      {
+        id: "ckp-sp-02",
+        name: "Coastal Fish Fry & Rava Coat Masala",
+        tagline: "Byadgi Chilli, Roasted Garlic & Triphala",
+        category: "Spices",
+        tag: "Crispy Fry Secret ⚡",
+        spiceLevel: 4,
+        stock: 40,
+        rating: 4.9,
+        reviewsCount: 310,
+        image: "https://images.unsplash.com/photo-1509358271058-acd22cc93898?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "150g Pouch", price: 135, originalPrice: 170 },
+          { size: "300g Jar", price: 250, originalPrice: 320 }
+        ],
+        description: "Authentic spice blend engineered for crispy rava tawa fry on Surmai, Pomfret, and Bombil."
+      },
+      {
+        id: "ckp-sp-03",
+        name: "Pure Lakadong Golden Turmeric",
+        tagline: "High Curcumin > 7% • Sun-Dried Roots",
+        category: "Spices",
+        tag: "Superfood 💛",
+        spiceLevel: 1,
+        stock: 60,
+        rating: 4.9,
+        reviewsCount: 280,
+        image: "https://images.unsplash.com/photo-1615485290119-98a3204927b9?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "200g Pouch", price: 125, originalPrice: 160 },
+          { size: "500g Pack", price: 270, originalPrice: 350 }
+        ],
+        description: "Organically grown high-curcumin rhizomes. Radiant golden color and anti-inflammatory power."
+      },
+
+      // 3. BARNI PICKLES
+      {
+        id: "ckp-pk-01",
+        name: "Grandma's 21-Day Sun-Dried Aam Achaar",
+        tagline: "Cured in Martabaan • Pure Mustard Oil",
+        category: "Pickles",
+        tag: "Aged in Barni 🏺",
+        spiceLevel: 3,
+        stock: 35,
+        rating: 5.0,
+        reviewsCount: 450,
+        image: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "250g Jar", price: 185, originalPrice: 230 },
+          { size: "500g Barni Pack", price: 350, originalPrice: 440 }
+        ],
+        description: "Hand-cut raw Ramkela mangoes sun-matured for 21 days in earthenware. Zero synthetic vinegar."
+      },
+      {
+        id: "ckp-pk-02",
+        name: "Stuffed Banarasi Bharwa Lal Mirch",
+        tagline: "Whole Red Chillies • 12-Spice Roasted Mix",
+        category: "Pickles",
+        tag: "Winter Heritage 🔥",
+        spiceLevel: 4,
+        stock: 28,
+        rating: 4.9,
+        reviewsCount: 310,
+        image: "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "300g Jar", price: 245, originalPrice: 300 },
+          { size: "500g Jar", price: 390, originalPrice: 490 }
+        ],
+        description: "Plump winter red chillies stuffed with amchur, saunf, and mustard, aged in virgin mustard oil."
+      },
+      {
+        id: "ckp-pk-03",
+        name: "Desi Lahsun & Yellow Mustard Achaar",
+        tagline: "Peeled Country Garlic • Immunity Booster",
+        category: "Pickles",
+        tag: "Garlic Punch 🧄",
+        spiceLevel: 4,
+        stock: 30,
+        rating: 4.8,
+        reviewsCount: 240,
+        image: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
+        variants: [
+          { size: "250g Jar", price: 215, originalPrice: 270 },
+          { size: "500g Jar", price: 390, originalPrice: 480 }
+        ],
+        description: "Whole desi garlic cloves steeped in pungent yellow mustard seeds, curry leaves, and rock salt."
+      }
+    ];
+
+    // Complete Website Customizer Defaults (Owner can change every image, text, logo & emoji)
+    const DEFAULT_SITE_CONTENT = {
+      // 1. Logos & Branding
+      logoType: "emoji", // 'emoji' or 'image'
+      logoEmoji: "🐟",
+      logoImageUrl: "",
+      storeTitle: "CKP's Crunch",
+      storeSubtitle: "Coastal Seafood • Masalas • Pickles",
+
+      // 2. Top Notification Strip
+      topAnnouncement: "🌊 Fresh Coastal Catch: Direct from Konkan Shores! Cleaned Sun-Dried Fish, Spices & Barni Pickles 🦐",
+
+      // 3. Navigation Items (Emojis & Texts)
+      navAllEmoji: "🛒",
+      navAllText: "All",
+      navDryFishEmoji: "🐟",
+      navDryFishText: "Dry Fish",
+      navSpicesEmoji: "🌿",
+      navSpicesText: "Spices",
+      navPicklesEmoji: "🏺",
+      navPicklesText: "Pickles",
+      navCartEmoji: "🛍️",
+      navCartText: "Cart",
+      navSignInText: "Sign In",
+
+      // 4. Hero Ocean Waves Banner
+      heroBadgeEmoji: "🌊",
+      heroBadge: "Konkan Coast Direct • Hand-Cured Sun Delicacies",
+      heroHeading: "Pure Coastal Heritage. Zero Compromise.",
+      heroQuote: "\"Crispy Sun-Dried Bombil & Kolambi that take you straight to Alibaug shore!\"",
+      heroBgVideo: "https://cdn.coverr.co/videos/coverr-waves-crashing-on-a-tropical-beach/1080p.mp4",
+      heroPosterImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+
+      // 5. The 3 Department Showcase Cards (Images, Emojis, Badges, Titles & Taglines)
+      dryFishCardImage: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+      dryFishCardBadge: "100% Sun-Dried",
+      dryFishCardTitle: "Sun-Dried Fish",
+      dryFishCardTagline: "Cleaned Bombil, Baby Kolambi & Jawla",
+
+      spicesCardImage: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
+      spicesCardBadge: "Stone Pounded",
+      spicesCardTitle: "Coastal Spices",
+      spicesCardTagline: "18-Spice CKP Garam Masala & Fish Coat",
+
+      picklesCardImage: "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+      picklesCardBadge: "Earthen Barni Cured",
+      picklesCardTitle: "Barni Pickles",
+      picklesCardTagline: "21-Day Sun-Matured Mango & Stuffed Mirch",
+
+      // 6. Product Catalog Grid
+      catalogTitle: "Konkan Coastal Offerings",
+      catalogSubtitle: "Direct Konkan coastal quality packed fresh to order.",
+      searchPlaceholder: "Search Bombil, Kolambi, Masala...",
+
+      // 7. Footer & Notices
+      footerTitle: "CKP's Crunch",
+      footerSubtitle: "Authentic Chandraseniya Kayastha Prabhu Sun-Dried Coastal Delicacies",
+      footerNotice: "Freshly sun-cured with Konkan sea breeze, traditional earthenware martabaan aging & zero artificial preservatives.",
+      footerCopyright: "CKP's Crunch. All rights reserved."
+    };
+
+    function App() {
+      // 0. Website Content, Images, Logos & Emojis (Customizable & Editable by Owner)
+      const [siteContent, setSiteContent] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_site_content_v9") || localStorage.getItem("ckp_site_content_v8");
+          return s ? { ...DEFAULT_SITE_CONTENT, ...JSON.parse(s) } : DEFAULT_SITE_CONTENT;
+        } catch(e) { return DEFAULT_SITE_CONTENT; }
+      });
+      useEffect(() => {
+        localStorage.setItem("ckp_site_content_v9", JSON.stringify(siteContent));
+      }, [siteContent]);
+
+      // Owner Live In-Place Customizers
+      const [isLiveEditActive, setIsLiveEditActive] = useState(false);
+      const [editingTextModal, setEditingTextModal] = useState(null); // { key, label, value }
+      const [editingImageModal, setEditingImageModal] = useState(null); // { key, label, currentUrl }
+      const [editingEmojiModal, setEditingEmojiModal] = useState(null); // { key, label, value }
+      const [editingLogoModal, setEditingLogoModal] = useState(false);
+
+      // Hero Ocean Video Reference for Guaranteed Autoplay Across Browsers
+      const heroVideoRef = useRef(null);
+      useEffect(() => {
+        if (heroVideoRef.current) {
+          heroVideoRef.current.defaultMuted = true;
+          heroVideoRef.current.muted = true;
+          const playPromise = heroVideoRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {});
+          }
+        }
+      }, [siteContent.heroBgVideo]);
+
+      // 1. Products
+      const [products, setProducts] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_products_v6");
+          return s ? JSON.parse(s) : DEFAULT_CATALOG;
+        } catch(e) { return DEFAULT_CATALOG; }
+      });
+      useEffect(() => { localStorage.setItem("ckp_products_v6", JSON.stringify(products)); }, [products]);
+
+      // 2. Owner Credentials & Settings (Changeable by Owner)
+      const [ownerConfig, setOwnerConfig] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_owner_config_v6");
+          return s ? JSON.parse(s) : {
+            id: "Tejas1999",
+            password: "Yash2006",
+            upiId: "masterpradhan1231@upi",
+            storeName: "CKP's Crunch",
+            freeDeliveryMin: 499,
+            shippingFee: 50
+          };
+        } catch(e) {
+          return {
+            id: "Tejas1999",
+            password: "Yash2006",
+            upiId: "masterpradhan1231@upi",
+            storeName: "CKP's Crunch",
+            freeDeliveryMin: 499,
+            shippingFee: 50
+          };
+        }
+      });
+      useEffect(() => { localStorage.setItem("ckp_owner_config_v6", JSON.stringify(ownerConfig)); }, [ownerConfig]);
+
+      // 3. Employees / Staff Management (Managed by Owner)
+      const [employees, setEmployees] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_employees_v6");
+          return s ? JSON.parse(s) : [
+            { id: "EMP-01", name: "Suresh Kadam", phone: "9820011223", role: "Packaging Head", status: "Active" },
+            { id: "EMP-02", name: "Mahesh Prabhu", phone: "9833044556", role: "Dispatch Manager", status: "Active" }
+          ];
+        } catch(e) { return []; }
+      });
+      useEffect(() => { localStorage.setItem("ckp_employees_v6", JSON.stringify(employees)); }, [employees]);
+
+      // 4. Registered Customer Users
+      const [registeredUsers, setRegisteredUsers] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_users_v6");
+          return s ? JSON.parse(s) : {};
+        } catch(e) { return {}; }
+      });
+      useEffect(() => { localStorage.setItem("ckp_users_v6", JSON.stringify(registeredUsers)); }, [registeredUsers]);
+
+      // 5. Currently Logged In User
+      const [currentUser, setCurrentUser] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_curr_user_v6");
+          return s ? JSON.parse(s) : null;
+        } catch(e) { return null; }
+      });
+      useEffect(() => {
+        if(currentUser) localStorage.setItem("ckp_curr_user_v6", JSON.stringify(currentUser));
+        else localStorage.removeItem("ckp_curr_user_v6");
+      }, [currentUser]);
+
+      // 6. Orders
+      const [orders, setOrders] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_orders_v6");
+          return s ? JSON.parse(s) : [];
+        } catch(e) { return []; }
+      });
+      useEffect(() => { localStorage.setItem("ckp_orders_v6", JSON.stringify(orders)); }, [orders]);
+
+      // Active Section: "All", "Dry Fish", "Spices", "Pickles"
+      const [activeSection, setActiveSection] = useState("All");
+      const [searchQuery, setSearchQuery] = useState("");
+      const [selectedVariants, setSelectedVariants] = useState({});
+
+      // Cart
+      const [cart, setCart] = useState(() => {
+        try {
+          const s = localStorage.getItem("ckp_cart_v6");
+          return s ? JSON.parse(s) : [];
+        } catch(e) { return []; }
+      });
+      useEffect(() => { localStorage.setItem("ckp_cart_v6", JSON.stringify(cart)); }, [cart]);
+      const [isCartOpen, setIsCartOpen] = useState(false);
+
+      // Modals
+      const [showLoginModal, setShowLoginModal] = useState(false);
+      const [showProfileModal, setShowProfileModal] = useState(false);
+      const [showCheckoutDetailsModal, setShowCheckoutDetailsModal] = useState(false);
+      const [showAutoPaymentGatewayModal, setShowAutoPaymentGatewayModal] = useState(false);
+      const [quickViewProduct, setQuickViewProduct] = useState(null);
+      const [orderSuccessData, setOrderSuccessData] = useState(null);
+
+      // Owner Interface Mode
+      const [isOwnerPortalView, setIsOwnerPortalView] = useState(false);
+      const [ownerTab, setOwnerTab] = useState("orders"); // 'orders', 'stock', 'employees', 'profile', 'upload'
+
+      // Checkout State
+      const [checkoutForm, setCheckoutForm] = useState({
+        fullName: "",
+        mobile: "",
+        streetAddress: "",
+        landmark: "",
+        city: "",
+        pincode: ""
+      });
+
+      // Pending Order being processed in Auto Payment Screen
+      const [pendingOrder, setPendingOrder] = useState(null);
+      const [paymentStep, setPaymentStep] = useState("awaiting"); // 'awaiting', 'detecting', 'confirmed'
+      const [paymentTimer, setPaymentTimer] = useState(300); // 5 min countdown
+
+      // Login form state
+      const [loginId, setLoginId] = useState("");
+      const [loginPass, setLoginPass] = useState("");
+      const [loginName, setLoginName] = useState("");
+      const [isRegisterMode, setIsRegisterMode] = useState(false);
+      const [loginError, setLoginError] = useState("");
+
+      // Employee Form State
+      const [newEmp, setNewEmp] = useState({ name: "", phone: "", role: "Packaging", status: "Active" });
+
+      // Profile edit form
+      const [profileForm, setProfileForm] = useState({ id: "", password: "", name: "" });
+
+      // Product Upload Form
+      const [productForm, setProductForm] = useState({
+        id: "",
+        name: "",
+        tagline: "",
+        category: "Dry Fish",
+        tag: "Fresh Batch",
+        spiceLevel: 2,
+        stock: 30,
+        image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+        size1: "250g Pack",
+        price1: 195,
+        orig1: 250,
+        description: ""
+      });
+
+      const isOwner = currentUser && currentUser.role === "owner";
+
+      // Filtered Products
+      const filteredProducts = useMemo(() => {
+        return products.filter(p => {
+          const matchCat = activeSection === "All" || p.category.toLowerCase() === activeSection.toLowerCase();
+          const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (p.tagline && p.tagline.toLowerCase().includes(searchQuery.toLowerCase()));
+          return matchCat && matchSearch;
+        });
+      }, [products, activeSection, searchQuery]);
+
+      // Department Counts
+      const counts = useMemo(() => ({
+        all: products.length,
+        dryfish: products.filter(p => p.category === "Dry Fish").length,
+        spices: products.filter(p => p.category === "Spices").length,
+        pickles: products.filter(p => p.category === "Pickles").length,
+      }), [products]);
+
+      // Cart calculations
+      const cartSubtotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart]);
+      const isFreeDelivery = cartSubtotal >= ownerConfig.freeDeliveryMin;
+      const shippingCharge = cartSubtotal > 0 ? (isFreeDelivery ? 0 : ownerConfig.shippingFee) : 0;
+      const cartTotal = cartSubtotal + shippingCharge;
+      const totalItemsCount = cart.reduce((c, i) => c + i.quantity, 0);
+
+      // Cart helpers
+      const addToCart = (product, variantIdx = null) => {
+        if (product.stock <= 0) return;
+        const vIdx = variantIdx !== null ? variantIdx : (selectedVariants[product.id] || 0);
+        const variant = product.variants[vIdx] || product.variants[0];
+        const cartItemId = `${product.id}-${variant.size}`;
+
+        setCart(prev => {
+          const existing = prev.find(i => i.id === cartItemId);
+          if (existing) {
+            return prev.map(i => i.id === cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
+          }
+          return [...prev, {
+            id: cartItemId,
+            productId: product.id,
+            name: product.name,
+            category: product.category,
+            size: variant.size,
+            price: variant.price,
+            image: product.image,
+            quantity: 1
+          }];
+        });
+        setIsCartOpen(true);
+      };
+
+      const updateCartQty = (id, delta) => {
+        setCart(prev => prev.map(item => {
+          if (item.id === id) {
+            const n = item.quantity + delta;
+            return n > 0 ? { ...item, quantity: n } : null;
+          }
+          return item;
+        }).filter(Boolean));
+      };
+
+      const removeCartItem = (id) => setCart(prev => prev.filter(i => i.id !== id));
+
+      // Same Unified Login Portal
+      const handleUnifiedLogin = (e) => {
+        e.preventDefault();
+        const id = loginId.trim();
+        const pass = loginPass.trim();
+
+        // 1. Owner Login Check
+        if (id === ownerConfig.id && pass === ownerConfig.password) {
+          setCurrentUser({ role: "owner", id: ownerConfig.id, name: "Tejas (Owner)" });
+          setIsOwnerPortalView(true);
+          setShowLoginModal(false);
+          setLoginError("");
+          setLoginId(""); setLoginPass("");
+          return;
+        }
+
+        // 2. Customer Auth
+        if (isRegisterMode) {
+          if (!loginName) {
+            setLoginError("Please enter your Full Name.");
+            return;
+          }
+          const newUser = { name: loginName, mobile: id, password: pass };
+          setRegisteredUsers(prev => ({ ...prev, [id]: newUser }));
+          setCurrentUser({ role: "customer", name: loginName, mobile: id });
+          setShowLoginModal(false);
+          setLoginError("");
+          setLoginId(""); setLoginPass(""); setLoginName("");
+        } else {
+          const user = registeredUsers[id];
+          if (user && user.password === pass) {
+            setCurrentUser({ role: "customer", name: user.name, mobile: user.mobile });
+            setShowLoginModal(false);
+            setLoginError("");
+            setLoginId(""); setLoginPass("");
+          } else if (!user) {
+            // Auto register on first attempt
+            const autoName = loginName || "Customer " + id.slice(-4);
+            const newUser = { name: autoName, mobile: id, password: pass };
+            setRegisteredUsers(prev => ({ ...prev, [id]: newUser }));
+            setCurrentUser({ role: "customer", name: autoName, mobile: id });
+            setShowLoginModal(false);
+            setLoginError("");
+            setLoginId(""); setLoginPass("");
+          } else {
+            setLoginError("Incorrect password. Please verify.");
+          }
+        }
+      };
+
+      const handleLogout = () => {
+        setCurrentUser(null);
+        setIsOwnerPortalView(false);
+      };
+
+      // Profile / Password Change Handler (For both Owner and Customer)
+      const handleSaveProfile = (e) => {
+        e.preventDefault();
+        if (currentUser.role === "owner") {
+          setOwnerConfig(prev => ({
+            ...prev,
+            id: profileForm.id || prev.id,
+            password: profileForm.password || prev.password
+          }));
+          setCurrentUser(prev => ({ ...prev, id: profileForm.id || prev.id }));
+          alert("Owner ID and Password updated successfully!");
+        } else {
+          // Update customer
+          const mobile = currentUser.mobile;
+          setRegisteredUsers(prev => ({
+            ...prev,
+            [mobile]: {
+              ...prev[mobile],
+              name: profileForm.name || prev[mobile]?.name,
+              password: profileForm.password || prev[mobile]?.password
+            }
+          }));
+          setCurrentUser(prev => ({ ...prev, name: profileForm.name || prev.name }));
+          alert("Profile & password updated successfully!");
+        }
+        setShowProfileModal(false);
+      };
+
+      // Proceed from Cart to Customer Address Form
+      const startCheckout = () => {
+        setIsCartOpen(false);
+        if (currentUser && currentUser.role === "customer") {
+          setCheckoutForm(prev => ({
+            ...prev,
+            fullName: currentUser.name,
+            mobile: currentUser.mobile
+          }));
+        }
+        setShowCheckoutDetailsModal(true);
+      };
+
+      // Submit Address Details -> Launch Auto Payment Gateway with QR Code
+      const handleDetailsSubmit = (e) => {
+        e.preventDefault();
+        if (!checkoutForm.fullName || !checkoutForm.mobile || !checkoutForm.streetAddress || !checkoutForm.pincode) {
+          alert("Please fill all address fields.");
+          return;
+        }
+
+        const orderId = "CKP-" + Math.floor(100000 + Math.random() * 900000);
+        const orderInfo = {
+          orderId,
+          date: new Date().toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          customer: { ...checkoutForm },
+          items: [...cart],
+          subtotal: cartSubtotal,
+          shipping: shippingCharge,
+          total: cartTotal,
+          paymentMethod: "UPI Instant Auto-Pay",
+          status: "Awaiting UPI Payment"
+        };
+
+        setPendingOrder(orderInfo);
+        setShowCheckoutDetailsModal(false);
+        setShowAutoPaymentGatewayModal(true);
+        setPaymentStep("awaiting");
+        setPaymentTimer(300); // 5 min countdown
+      };
+
+      // Payment Timer & Simulated Webhook / Auto-Fetch
+      useEffect(() => {
+        let interval = null;
+        if (showAutoPaymentGatewayModal && paymentStep === "awaiting" && paymentTimer > 0) {
+          interval = setInterval(() => {
+            setPaymentTimer(t => t - 1);
+          }, 1000);
+        }
+        return () => clearInterval(interval);
+      }, [showAutoPaymentGatewayModal, paymentStep, paymentTimer]);
+
+      // Simulated Auto-Payment Confirmation (Like Amazon / Razorpay Auto-Fetch)
+      const triggerAutoPaymentConfirmation = () => {
+        setPaymentStep("detecting");
+        setTimeout(() => {
+          setPaymentStep("confirmed");
+          
+          // Complete the order
+          const finalOrder = {
+            ...pendingOrder,
+            status: "Payment Confirmed ✅ (Auto-Verified)",
+            utrNumber: "UPI-" + Math.floor(100000000000 + Math.random() * 900000000000)
+          };
+
+          // Deduct stock
+          setProducts(prev => {
+            return prev.map(prod => {
+              const matches = finalOrder.items.filter(i => i.productId === prod.id);
+              if (matches.length > 0) {
+                const qty = matches.reduce((sum, item) => sum + item.quantity, 0);
+                return { ...prod, stock: Math.max(0, prod.stock - qty) };
+              }
+              return prod;
+            });
+          });
+
+          // Save to Master Orders list
+          setOrders(prev => [finalOrder, ...prev]);
+
+          if (typeof confetti === "function") {
+            confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
+          }
+
+          setTimeout(() => {
+            setShowAutoPaymentGatewayModal(false);
+            setOrderSuccessData(finalOrder);
+            setCart([]);
+          }, 1500);
+        }, 2200);
+      };
+
+      // Dynamic UPI Intent URI
+      const dynamicUpiUri = useMemo(() => {
+        if (!pendingOrder) return "";
+        const pa = ownerConfig.upiId;
+        const pn = encodeURIComponent("CKP's Crunch");
+        const am = pendingOrder.total;
+        const tn = encodeURIComponent(`CKPs Crunch Order ${pendingOrder.orderId}`);
+        return `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+      }, [pendingOrder, ownerConfig.upiId]);
+
+      // Dynamic QR Code URL
+      const upiQrUrl = useMemo(() => {
+        if (!dynamicUpiUri) return "";
+        return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(dynamicUpiUri)}`;
+      }, [dynamicUpiUri]);
+
+      // Employee management helpers
+      const handleAddEmployee = (e) => {
+        e.preventDefault();
+        if (!newEmp.name || !newEmp.phone) return;
+        const empObj = {
+          id: "EMP-" + (employees.length + 1).toString().padStart(2, '0'),
+          ...newEmp
+        };
+        setEmployees(prev => [...prev, empObj]);
+        setNewEmp({ name: "", phone: "", role: "Packaging", status: "Active" });
+      };
+
+      const toggleEmpStatus = (id) => {
+        setEmployees(prev => prev.map(e => e.id === id ? { ...e, status: e.status === "Active" ? "On Leave" : "Active" } : e));
+      };
+
+      const deleteEmp = (id) => {
+        if (confirm("Delete this employee?")) {
+          setEmployees(prev => prev.filter(e => e.id !== id));
+        }
+      };
+
+      // Owner product helpers
+      const updateStock = (id, val) => {
+        setProducts(prev => prev.map(p => p.id === id ? { ...p, stock: Math.max(0, Number(val)) } : p));
+      };
+
+      const handleSaveProduct = (e) => {
+        e.preventDefault();
+        const newP = {
+          id: productForm.id || "ckp-" + Date.now(),
+          name: productForm.name,
+          tagline: productForm.tagline,
+          category: productForm.category,
+          tag: productForm.tag,
+          spiceLevel: Number(productForm.spiceLevel),
+          stock: Number(productForm.stock),
+          rating: 5.0,
+          reviewsCount: 1,
+          image: productForm.image,
+          variants: [
+            { size: productForm.size1, price: Number(productForm.price1), originalPrice: Number(productForm.orig1) }
+          ],
+          description: productForm.description
+        };
+        setProducts(prev => [newP, ...prev]);
+        alert("Product added successfully!");
+        setOwnerTab("stock");
+      };
+
+      // In-Place Live Click-to-Edit Renderer for Owner
+      const renderEditable = (key, label, fallbackText, Tag = "span", className = "") => {
+        const val = siteContent[key] !== undefined ? siteContent[key] : fallbackText;
+        if (!isOwner || !isLiveEditActive) {
+          return <Tag className={className}>{val}</Tag>;
+        }
+        return (
+          <Tag
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingTextModal({ key, label, value: val });
+            }}
+            className={`${className} cursor-pointer relative group rounded px-1 -mx-0.5 border-2 border-dashed border-amber-400 bg-amber-400/20 hover:bg-amber-400/40 transition-all shadow-sm`}
+            title={`Owner Edit: Click to change "${label}"`}
+          >
+            {val}
+            <span className="inline-block ml-1 text-xs text-amber-300 drop-shadow group-hover:scale-125 transition-transform">✏️</span>
+          </Tag>
+        );
+      };
+
+      // In-Place Live Click-to-Edit Emoji Renderer
+      const renderEditableEmoji = (key, fallbackEmoji, Tag = "span", className = "") => {
+        const val = siteContent[key] !== undefined ? siteContent[key] : fallbackEmoji;
+        if (!isOwner || !isLiveEditActive) {
+          return <Tag className={className}>{val}</Tag>;
+        }
+        return (
+          <Tag
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingEmojiModal({ key, label: key, value: val });
+            }}
+            className={`${className} cursor-pointer relative group rounded px-1 -mx-0.5 border border-dashed border-amber-400 bg-amber-400/25 hover:bg-amber-400/50 transition inline-block`}
+            title={`Owner Edit: Click to change emoji "${val}"`}
+          >
+            {val}
+            <span className="text-[10px] ml-0.5 opacity-70 group-hover:opacity-100">✏️</span>
+          </Tag>
+        );
+      };
+
+      return (
+        <div className="min-h-screen flex flex-col bg-[#FAF7F2]">
+
+          {/* ================= OWNER LOGGED IN BAR ================= */}
+          {isOwner && (
+            <div className="bg-stone-950 text-stone-100 px-4 py-2 text-xs border-b border-amber-600/40 sticky top-0 z-50 shadow-md">
+              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="bg-amber-500 text-stone-950 font-black px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
+                    👑 Owner: {ownerConfig.id}
+                  </span>
+                  <span className="text-stone-300 hidden sm:inline">
+                    Manage Orders, Live Stock, Staff, and Customize Any Website Text & Tagline.
+                  </span>
+                </div>
+
+                <div className="flex items-center flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setIsLiveEditActive(!isLiveEditActive);
+                      if (isOwnerPortalView) setIsOwnerPortalView(false);
+                    }}
+                    className={`font-bold px-3 py-1 rounded-lg text-xs shadow transition flex items-center gap-1.5 ${
+                      isLiveEditActive
+                        ? "bg-emerald-500 text-stone-950 ring-2 ring-emerald-300 font-black"
+                        : "bg-amber-600 hover:bg-amber-500 text-white"
+                    }`}
+                    title="Click any sentence or tagline on the page to edit it immediately!"
+                  >
+                    <span>{isLiveEditActive ? "✏️ Edit Mode: ON (Click text)" : "✏️ Live Edit Text Mode"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsOwnerPortalView(!isOwnerPortalView);
+                      setIsLiveEditActive(false);
+                    }}
+                    className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-3 py-1 rounded-lg text-xs shadow transition"
+                  >
+                    {isOwnerPortalView ? "🛒 View Storefront" : "⚙️ Open Owner Portal"}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setProfileForm({ id: ownerConfig.id, password: ownerConfig.password, name: "Tejas (Owner)" });
+                      setShowProfileModal(true);
+                    }}
+                    className="bg-stone-800 hover:bg-stone-700 text-stone-200 px-2.5 py-1 rounded-lg"
+                    title="Change Owner ID & Password"
+                  >
+                    🔑 Change ID/Password
+                  </button>
+
+                  <button
+                    onClick={handleLogout}
+                    className="bg-red-800 hover:bg-red-700 text-white font-bold px-2.5 py-1 rounded-lg"
+                  >
+                    Log Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* Floating Live Edit Indicator */}
+          {isOwner && isLiveEditActive && (
+            <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-stone-900/95 text-amber-200 px-5 py-2.5 rounded-full shadow-2xl border-2 border-amber-500 flex items-center gap-3 backdrop-blur-md text-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span className="font-bold text-white">✏️ Live Edit Active: Click any line or tagline to change it!</span>
+              <button
+                onClick={() => setIsLiveEditActive(false)}
+                className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black px-3 py-1 rounded-full text-[11px] transition shadow"
+              >
+                Done Editing ✓
+              </button>
+            </div>
+          )}
+
+
+          {/* ================= OWNER DEDICATED MANAGEMENT PORTAL ================= */}
+          {isOwner && isOwnerPortalView ? (
+            <div className="flex-1 bg-stone-100 p-4 sm:p-8">
+              <div className="max-w-7xl mx-auto space-y-6">
+                
+                {/* Header */}
+                <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 className="font-brand text-2xl font-black text-stone-900">CKP's Crunch Owner Management</h2>
+                    <p className="text-xs text-stone-500 mt-1">UPI Payee: <code className="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">{ownerConfig.upiId}</code></p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 bg-stone-100 p-1.5 rounded-2xl border text-xs font-bold">
+                    <button onClick={() => setOwnerTab("orders")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "orders" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      📦 Orders ({orders.length})
+                    </button>
+                    <button onClick={() => setOwnerTab("stock")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "stock" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      📊 Stock ({products.length})
+                    </button>
+                    <button onClick={() => setOwnerTab("texts")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "texts" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      ✏️ Edit Website Content
+                    </button>
+                    <button onClick={() => setOwnerTab("employees")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "employees" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      👥 Employees ({employees.length})
+                    </button>
+                    <button onClick={() => setOwnerTab("upload")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "upload" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      ✨ Upload Product
+                    </button>
+                  </div>
+                </div>
+
+                {/* 1. ORDERS TAB */}
+                {ownerTab === "orders" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+                    <div className="flex justify-between items-center border-b pb-3">
+                      <h3 className="font-brand text-lg font-bold text-stone-900">All Customer Orders & Payments</h3>
+                      <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
+                        {orders.length} Total Orders
+                      </span>
+                    </div>
+
+                    {orders.length === 0 ? (
+                      <div className="text-center py-12 text-stone-400">
+                        <span className="text-4xl">📭</span>
+                        <p className="font-bold text-stone-700 mt-2 text-xs">No orders yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {orders.map(order => (
+                          <div key={order.orderId} className="bg-stone-50 p-4 rounded-2xl border border-stone-200 text-xs space-y-2">
+                            <div className="flex justify-between items-center border-b pb-2">
+                              <div>
+                                <span className="font-black text-sm text-stone-900">{order.orderId}</span>
+                                <span className="text-stone-400 ml-2">({order.date})</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded text-[10px]">
+                                  {order.status}
+                                </span>
+                                <span className="text-base font-black text-stone-900">₹{order.total}</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-stone-700">
+                              <div className="bg-white p-2.5 rounded-xl border">
+                                <div><strong>Customer:</strong> {order.customer.fullName}</div>
+                                <div><strong>Phone:</strong> <a href={`https://wa.me/91${order.customer.mobile.replace(/[^0-9]/g, '')}`} target="_blank" className="text-emerald-700 font-bold underline">{order.customer.mobile}</a></div>
+                                <div><strong>UTR Reference:</strong> <span className="font-mono bg-stone-100 px-1 rounded">{order.utrNumber}</span></div>
+                              </div>
+                              <div className="bg-white p-2.5 rounded-xl border">
+                                <div><strong>Address:</strong> {order.customer.streetAddress}, {order.customer.landmark ? `Near ${order.customer.landmark}, ` : ""}{order.customer.city} - {order.customer.pincode}</div>
+                              </div>
+                            </div>
+
+                            <div className="pt-1">
+                              <strong>Items:</strong> {order.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(", ")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 2. LIVE STOCK TAB */}
+                {ownerTab === "stock" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+                    <h3 className="font-brand text-lg font-bold text-stone-900 border-b pb-3">Stock & Inventory Manager</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-stone-50 border-b font-bold text-stone-600">
+                          <tr>
+                            <th className="p-3">Product</th>
+                            <th className="p-3">Category</th>
+                            <th className="p-3">Price</th>
+                            <th className="p-3">Live Stock Units</th>
+                            <th className="p-3">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y text-stone-800">
+                          {products.map(p => (
+                            <tr key={p.id}>
+                              <td className="p-3 flex items-center gap-3">
+                                <div className="relative group shrink-0">
+                                  <img src={p.image} className="w-12 h-12 rounded-lg object-cover border" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingImageModal({ key: `product:${p.id}`, label: `Photo for ${p.name}`, currentUrl: p.image })}
+                                    className="absolute inset-0 bg-black/60 rounded-lg text-white text-[9px] font-bold flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition shadow"
+                                    title="Click to Change Photo"
+                                  >
+                                    📷 Change
+                                  </button>
+                                </div>
+                                <div className="space-y-1 w-full max-w-xs">
+                                  <div className="flex gap-1.5 items-center">
+                                    <input
+                                      type="text"
+                                      value={p.name}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, name: val } : item));
+                                      }}
+                                      className="font-bold text-stone-900 border rounded px-1.5 py-0.5 flex-1 bg-white text-xs"
+                                      title="Edit Product Title"
+                                    />
+                                    <input
+                                      type="text"
+                                      value={p.tag}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, tag: val } : item));
+                                      }}
+                                      className="text-[10px] border rounded px-1.5 py-0.5 w-28 bg-amber-50 font-bold text-amber-900 text-center"
+                                      title="Edit Product Badge / Emoji Tag"
+                                    />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    value={p.tagline}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setProducts(prev => prev.map(item => item.id === p.id ? { ...item, tagline: val } : item));
+                                    }}
+                                    className="text-[10px] text-stone-600 border rounded px-1.5 py-0.5 w-full bg-stone-50"
+                                    placeholder="Enter tagline..."
+                                    title="Edit Product Tagline"
+                                  />
+                                </div>
+                              </td>
+                              <td className="p-3 font-semibold">{p.category}</td>
+                              <td className="p-3 font-bold">₹{p.variants[0]?.price}</td>
+                              <td className="p-3">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={p.stock}
+                                  onChange={(e) => updateStock(p.id, e.target.value)}
+                                  className="w-16 border rounded-lg px-2 py-1 font-bold text-stone-900"
+                                />
+                              </td>
+                              <td className="p-3">
+                                {p.stock > 10 ? (
+                                  <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">In Stock</span>
+                                ) : p.stock > 0 ? (
+                                  <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-[10px]">Low ({p.stock})</span>
+                                ) : (
+                                  <span className="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px]">Sold Out</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. EMPLOYEES & STAFF TAB */}
+                {ownerTab === "employees" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+                    <div>
+                      <h3 className="font-brand text-lg font-bold text-stone-900">Staff & Employee Management</h3>
+                      <p className="text-xs text-stone-500">Add, track, and update employee status.</p>
+                    </div>
+
+                    {/* Add Employee Form */}
+                    <form onSubmit={handleAddEmployee} className="bg-stone-50 p-4 rounded-2xl border grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Employee Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={newEmp.name}
+                          onChange={(e) => setNewEmp({ ...newEmp, name: e.target.value })}
+                          placeholder="e.g. Ramesh Shinde"
+                          className="w-full border rounded-xl px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Phone / Mobile</label>
+                        <input
+                          type="tel"
+                          required
+                          value={newEmp.phone}
+                          onChange={(e) => setNewEmp({ ...newEmp, phone: e.target.value })}
+                          placeholder="10-digit number"
+                          className="w-full border rounded-xl px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Role / Department</label>
+                        <select
+                          value={newEmp.role}
+                          onChange={(e) => setNewEmp({ ...newEmp, role: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2 font-semibold"
+                        >
+                          <option value="Packaging & Barni Curing">Packaging & Barni Curing</option>
+                          <option value="Dispatch & Courier">Dispatch & Courier</option>
+                          <option value="Fish Drying Specialist">Fish Drying Specialist</option>
+                          <option value="Store Assistant">Store Assistant</option>
+                        </select>
+                      </div>
+                      <div className="flex items-end">
+                        <button type="submit" className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2 rounded-xl shadow">
+                          + Add Employee
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* Employee List */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-stone-50 border-b font-bold text-stone-600">
+                          <tr>
+                            <th className="p-3">ID</th>
+                            <th className="p-3">Name</th>
+                            <th className="p-3">Phone</th>
+                            <th className="p-3">Role</th>
+                            <th className="p-3">Status</th>
+                            <th className="p-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y text-stone-800">
+                          {employees.map(emp => (
+                            <tr key={emp.id}>
+                              <td className="p-3 font-mono font-bold text-stone-500">{emp.id}</td>
+                              <td className="p-3 font-bold text-stone-900">{emp.name}</td>
+                              <td className="p-3">{emp.phone}</td>
+                              <td className="p-3 font-semibold text-ckp-700">{emp.role}</td>
+                              <td className="p-3">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  emp.status === "Active" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                }`}>
+                                  {emp.status}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right space-x-2">
+                                <button
+                                  onClick={() => toggleEmpStatus(emp.id)}
+                                  className="text-[11px] font-bold text-blue-700 hover:underline"
+                                >
+                                  Toggle Status
+                                </button>
+                                <button
+                                  onClick={() => deleteEmp(emp.id)}
+                                  className="text-[11px] font-bold text-red-700 hover:underline"
+                                >
+                                  Delete
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. UPLOAD PRODUCT TAB */}
+                {ownerTab === "upload" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
+                    <h3 className="font-brand text-lg font-bold text-stone-900 border-b pb-3">Upload New Delicacy</h3>
+                    <form onSubmit={handleSaveProduct} className="space-y-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Category</label>
+                          <select
+                            value={productForm.category}
+                            onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 font-bold"
+                          >
+                            <option value="Dry Fish">🐟 Sun-Dried Fish</option>
+                            <option value="Spices">🌿 Coastal Spices</option>
+                            <option value="Pickles">🏺 Barni Pickles</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Product Title</label>
+                          <input
+                            type="text"
+                            required
+                            value={productForm.name}
+                            onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                            placeholder="e.g. Sukha Bombil Cleaned"
+                            className="w-full border rounded-xl px-3 py-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Catchy Tagline</label>
+                          <input
+                            type="text"
+                            value={productForm.tagline}
+                            onChange={(e) => setProductForm({ ...productForm, tagline: e.target.value })}
+                            placeholder="e.g. 100% Sun-Dried Konkan Gold"
+                            className="w-full border rounded-xl px-3 py-2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Pack Size</label>
+                          <input
+                            type="text"
+                            required
+                            value={productForm.size1}
+                            onChange={(e) => setProductForm({ ...productForm, size1: e.target.value })}
+                            placeholder="250g Pack"
+                            className="w-full border rounded-xl px-3 py-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Price (₹)</label>
+                          <input
+                            type="number"
+                            required
+                            value={productForm.price1}
+                            onChange={(e) => setProductForm({ ...productForm, price1: e.target.value })}
+                            placeholder="195"
+                            className="w-full border rounded-xl px-3 py-2 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Stock Units</label>
+                          <input
+                            type="number"
+                            required
+                            value={productForm.stock}
+                            onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
+                            className="w-full border rounded-xl px-3 py-2 font-bold"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Image URL</label>
+                        <input
+                          type="text"
+                          value={productForm.image}
+                          onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2"
+                        />
+                      </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <button type="submit" className="bg-amber-800 hover:bg-amber-900 text-white font-bold px-6 py-2 rounded-xl shadow">
+                          Publish to Store
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* 5. WEBSITE CONTENT & TAGLINES CMS TAB */}
+                {ownerTab === "texts" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+                      <div>
+                        <h3 className="font-brand text-lg font-bold text-stone-900 flex items-center gap-2">
+                          <span>✏️ Website Content & Live Tagline Editor</span>
+                          <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Owner CMS</span>
+                        </h3>
+                        <p className="text-xs text-stone-500 mt-0.5">
+                          Edit every sentence, banner headline, department card, and tagline on the website.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (confirm("Reset all website sentences and taglines back to initial default values?")) {
+                              setSiteContent(DEFAULT_SITE_CONTENT);
+                              alert("Website texts restored to initial defaults!");
+                            }
+                          }}
+                          className="px-3 py-1.5 border border-stone-300 hover:bg-stone-50 text-stone-600 rounded-xl text-xs font-bold transition"
+                        >
+                          ↺ Reset to Defaults
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsOwnerPortalView(false);
+                            setIsLiveEditActive(true);
+                          }}
+                          className="bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs shadow transition flex items-center gap-1.5"
+                        >
+                          <span>👁️ Open Live On-Page Editor</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                      
+                      {/* CARD 1: Top Bar & Branding */}
+                      <div className="bg-stone-50 p-4 rounded-2xl border space-y-3">
+                        <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm">
+                          <span>📢</span> Top Announcement & Store Branding
+                        </h4>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Top Blue Announcement Strip</label>
+                          <textarea
+                            rows={2}
+                            value={siteContent.topAnnouncement}
+                            onChange={(e) => setSiteContent({ ...siteContent, topAnnouncement: e.target.value })}
+                            className="w-full border rounded-xl p-2.5 bg-white font-medium"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Store Logo (Emoji or Photo)</label>
+                          <div className="flex gap-2 mb-2">
+                            <button
+                              type="button"
+                              onClick={() => setSiteContent(prev => ({ ...prev, logoType: "emoji" }))}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${siteContent.logoType !== "image" ? "bg-stone-900 text-white" : "bg-white text-stone-700"}`}
+                            >
+                              Emoji Logo
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSiteContent(prev => ({ ...prev, logoType: "image" }))}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${siteContent.logoType === "image" ? "bg-stone-900 text-white" : "bg-white text-stone-700"}`}
+                            >
+                              Photo / Image Logo
+                            </button>
+                          </div>
+                          {siteContent.logoType === "image" ? (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <img src={siteContent.logoImageUrl} className="w-10 h-10 rounded-lg object-cover border" onError={(e) => { e.target.style.display = 'none'; }} />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => setSiteContent(prev => ({ ...prev, logoImageUrl: ev.target.result }));
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-stone-900 file:text-white cursor-pointer"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={siteContent.logoImageUrl || ""}
+                                onChange={(e) => setSiteContent({ ...siteContent, logoImageUrl: e.target.value })}
+                                placeholder="Or paste logo image URL"
+                                className="w-full border rounded-xl px-3 py-1.5 text-xs bg-white"
+                              />
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={siteContent.logoEmoji || "🐟"}
+                              onChange={(e) => setSiteContent({ ...siteContent, logoEmoji: e.target.value })}
+                              className="w-20 border rounded-xl px-3 py-1.5 text-xl font-bold text-center bg-white"
+                            />
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Store Brand Name</label>
+                          <input
+                            type="text"
+                            value={siteContent.storeTitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, storeTitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white font-bold"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Header Subtitle</label>
+                          <input
+                            type="text"
+                            value={siteContent.storeSubtitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, storeSubtitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* CARD 2: Hero Section */}
+                      <div className="bg-stone-50 p-4 rounded-2xl border space-y-3">
+                        <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm">
+                          <span>🌊</span> Ocean Hero Banner
+                        </h4>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Hero Pill Badge</label>
+                          <input
+                            type="text"
+                            value={siteContent.heroBadge}
+                            onChange={(e) => setSiteContent({ ...siteContent, heroBadge: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Hero Big Main Heading</label>
+                          <textarea
+                            rows={2}
+                            value={siteContent.heroHeading}
+                            onChange={(e) => setSiteContent({ ...siteContent, heroHeading: e.target.value })}
+                            className="w-full border rounded-xl p-2.5 bg-white font-black"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Hero Handwritten Quote / Tagline</label>
+                          <textarea
+                            rows={2}
+                            value={siteContent.heroQuote}
+                            onChange={(e) => setSiteContent({ ...siteContent, heroQuote: e.target.value })}
+                            className="w-full border rounded-xl p-2.5 bg-white italic font-serif"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Hero Background Image (Upload or URL)</label>
+                          <div className="flex items-center gap-2 mb-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => setSiteContent(prev => ({ ...prev, heroPosterImage: ev.target.result }));
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[11px] file:font-bold file:bg-sky-800 file:text-white cursor-pointer"
+                            />
+                          </div>
+                          <input
+                            type="text"
+                            value={siteContent.heroPosterImage || ""}
+                            onChange={(e) => setSiteContent({ ...siteContent, heroPosterImage: e.target.value })}
+                            placeholder="Or paste background photo URL"
+                            className="w-full border rounded-xl px-3 py-1.5 text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* CARD 3: The 3 Showcase Cards */}
+                      <div className="bg-stone-50 p-4 rounded-2xl border space-y-3 md:col-span-2">
+                        <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm">
+                          <span>🖼️</span> Three Showcase Department Cards & Taglines
+                        </h4>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Dry Fish */}
+                          <div className="bg-white p-3.5 rounded-xl border border-sky-200 space-y-2">
+                            <div className="font-bold text-sky-900">🐟 1. Sun-Dried Fish Card</div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Card Image (Upload from Computer)</label>
+                              <div className="flex items-center gap-2 mb-1">
+                                <img src={siteContent.dryFishCardImage} className="w-8 h-8 rounded object-cover border shrink-0" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => setSiteContent(prev => ({ ...prev, dryFishCardImage: ev.target.result }));
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-[10px] text-stone-500 file:mr-1 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-sky-800 file:text-white cursor-pointer"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={siteContent.dryFishCardImage || ""}
+                                onChange={(e) => setSiteContent({ ...siteContent, dryFishCardImage: e.target.value })}
+                                placeholder="Or image URL"
+                                className="w-full border rounded-lg px-2 py-0.5 text-[10px]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Badge Text</label>
+                              <input
+                                type="text"
+                                value={siteContent.dryFishCardBadge}
+                                onChange={(e) => setSiteContent({ ...siteContent, dryFishCardBadge: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Title</label>
+                              <input
+                                type="text"
+                                value={siteContent.dryFishCardTitle}
+                                onChange={(e) => setSiteContent({ ...siteContent, dryFishCardTitle: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 font-bold text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Tagline Sentence</label>
+                              <textarea
+                                rows={2}
+                                value={siteContent.dryFishCardTagline}
+                                onChange={(e) => setSiteContent({ ...siteContent, dryFishCardTagline: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Spices */}
+                          <div className="bg-white p-3.5 rounded-xl border border-amber-200 space-y-2">
+                            <div className="font-bold text-amber-900">🌿 2. Coastal Spices Card</div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Card Image (Upload from Computer)</label>
+                              <div className="flex items-center gap-2 mb-1">
+                                <img src={siteContent.spicesCardImage} className="w-8 h-8 rounded object-cover border shrink-0" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => setSiteContent(prev => ({ ...prev, spicesCardImage: ev.target.result }));
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-[10px] text-stone-500 file:mr-1 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-amber-700 file:text-white cursor-pointer"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={siteContent.spicesCardImage || ""}
+                                onChange={(e) => setSiteContent({ ...siteContent, spicesCardImage: e.target.value })}
+                                placeholder="Or image URL"
+                                className="w-full border rounded-lg px-2 py-0.5 text-[10px]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Badge Text</label>
+                              <input
+                                type="text"
+                                value={siteContent.spicesCardBadge}
+                                onChange={(e) => setSiteContent({ ...siteContent, spicesCardBadge: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Title</label>
+                              <input
+                                type="text"
+                                value={siteContent.spicesCardTitle}
+                                onChange={(e) => setSiteContent({ ...siteContent, spicesCardTitle: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 font-bold text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Tagline Sentence</label>
+                              <textarea
+                                rows={2}
+                                value={siteContent.spicesCardTagline}
+                                onChange={(e) => setSiteContent({ ...siteContent, spicesCardTagline: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-xs"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Pickles */}
+                          <div className="bg-white p-3.5 rounded-xl border border-red-200 space-y-2">
+                            <div className="font-bold text-red-900">🏺 3. Barni Pickles Card</div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Card Image (Upload from Computer)</label>
+                              <div className="flex items-center gap-2 mb-1">
+                                <img src={siteContent.picklesCardImage} className="w-8 h-8 rounded object-cover border shrink-0" />
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) => setSiteContent(prev => ({ ...prev, picklesCardImage: ev.target.result }));
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                  className="w-full text-[10px] text-stone-500 file:mr-1 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-red-800 file:text-white cursor-pointer"
+                                />
+                              </div>
+                              <input
+                                type="text"
+                                value={siteContent.picklesCardImage || ""}
+                                onChange={(e) => setSiteContent({ ...siteContent, picklesCardImage: e.target.value })}
+                                placeholder="Or image URL"
+                                className="w-full border rounded-lg px-2 py-0.5 text-[10px]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Badge Text</label>
+                              <input
+                                type="text"
+                                value={siteContent.picklesCardBadge}
+                                onChange={(e) => setSiteContent({ ...siteContent, picklesCardBadge: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Title</label>
+                              <input
+                                type="text"
+                                value={siteContent.picklesCardTitle}
+                                onChange={(e) => setSiteContent({ ...siteContent, picklesCardTitle: e.target.value })}
+                                className="w-full border rounded-lg px-2.5 py-1 font-bold text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-stone-600 font-bold mb-0.5">Tagline Sentence</label>
+                              <textarea
+                                rows={2}
+                                value={siteContent.picklesCardTagline}
+                                onChange={(e) => setSiteContent({ ...siteContent, picklesCardTagline: e.target.value })}
+                                className="w-full border rounded-lg p-2 text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CARD 4: Catalog */}
+                      <div className="bg-stone-50 p-4 rounded-2xl border space-y-3">
+                        <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm">
+                          <span>📦</span> Catalog Grid Headings
+                        </h4>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Catalog Section Title</label>
+                          <input
+                            type="text"
+                            value={siteContent.catalogTitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, catalogTitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Catalog Subheading / Tagline</label>
+                          <input
+                            type="text"
+                            value={siteContent.catalogSubtitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, catalogSubtitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white"
+                          />
+                        </div>
+                      </div>
+
+                      {/* CARD 5: Footer Texts */}
+                      <div className="bg-stone-50 p-4 rounded-2xl border space-y-3">
+                        <h4 className="font-bold text-stone-900 flex items-center gap-1.5 text-sm">
+                          <span>⚓</span> Footer & Guarantee Notice
+                        </h4>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Footer Brand Title</label>
+                          <input
+                            type="text"
+                            value={siteContent.footerTitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, footerTitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Footer Subtitle Tagline</label>
+                          <input
+                            type="text"
+                            value={siteContent.footerSubtitle}
+                            onChange={(e) => setSiteContent({ ...siteContent, footerSubtitle: e.target.value })}
+                            className="w-full border rounded-xl px-3 py-2 bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Quality Notice Sentence</label>
+                          <textarea
+                            rows={2}
+                            value={siteContent.footerNotice}
+                            onChange={(e) => setSiteContent({ ...siteContent, footerNotice: e.target.value })}
+                            className="w-full border rounded-xl p-2.5 bg-white text-xs"
+                          />
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl flex items-center justify-between">
+                      <div className="text-emerald-900 font-semibold text-xs flex items-center gap-2">
+                        <span>✓</span> All modifications save automatically to browser storage in real time!
+                      </div>
+                      <button
+                        onClick={() => alert("Website sentences and taglines updated successfully!")}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow"
+                      >
+                        Confirm All Changes
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+            </div>
+          ) : (
+
+            // ================= VISUAL STOREFRONT WITH LIVE SEA ANIMATIONS =================
+            <>
+              {/* TOP SEA BREEZE STRIP */}
+              <div className="bg-[#051e34] text-sky-200 text-xs py-2 px-4 text-center font-medium tracking-wide flex items-center justify-center gap-2">
+                <span>{renderEditable("topAnnouncement", "Top Announcement Bar", siteContent.topAnnouncement)}</span>
+              </div>
+
+              {/* NAVIGATION */}
+              <header className="bg-white/95 backdrop-blur border-b border-stone-200 sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveSection("All")}>
+                    <div
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-800 to-amber-600 flex items-center justify-center text-white shadow-md text-2xl font-black font-brand relative group overflow-hidden shrink-0"
+                      onClick={(e) => {
+                        if (isOwner && isLiveEditActive) {
+                          e.stopPropagation();
+                          setEditingLogoModal(true);
+                        }
+                      }}
+                      title={isOwner && isLiveEditActive ? "Owner: Click to change Store Logo / Emoji" : "CKP's Crunch Home"}
+                    >
+                      {siteContent.logoType === "image" && siteContent.logoImageUrl ? (
+                        <img src={siteContent.logoImageUrl} alt="Logo" className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{siteContent.logoEmoji || "🐟"}</span>
+                      )}
+                      {isOwner && isLiveEditActive && (
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] text-amber-300 font-bold opacity-0 group-hover:opacity-100 transition">
+                          ✏️ Logo
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <h1 className="font-brand font-black text-2xl tracking-tight text-stone-900 leading-none">
+                        {renderEditable("storeTitle", "Store Brand Title", siteContent.storeTitle)}
+                      </h1>
+                      <p className="text-[11px] font-semibold text-sky-800 tracking-wider uppercase mt-1">
+                        {renderEditable("storeSubtitle", "Store Subtitle", siteContent.storeSubtitle)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3 Quick Departments */}
+                  <nav className="hidden md:flex items-center gap-2 bg-stone-100 p-1.5 rounded-2xl border text-xs font-bold">
+                    <button
+                      onClick={() => setActiveSection("All")}
+                      className={`px-3 py-1.5 rounded-xl transition ${activeSection === "All" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}
+                    >
+                      <span>{renderEditableEmoji("navAllEmoji", "🛒")}</span> <span>{renderEditable("navAllText", "All Nav Text", siteContent.navAllText)}</span> ({counts.all})
+                    </button>
+                    <button
+                      onClick={() => setActiveSection("Dry Fish")}
+                      className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${activeSection === "Dry Fish" ? "bg-sky-800 text-white shadow" : "text-stone-600"}`}
+                    >
+                      <span>{renderEditableEmoji("navDryFishEmoji", "🐟")}</span> <span>{renderEditable("navDryFishText", "Dry Fish Nav Text", siteContent.navDryFishText)}</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveSection("Spices")}
+                      className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${activeSection === "Spices" ? "bg-amber-700 text-white shadow" : "text-stone-600"}`}
+                    >
+                      <span>{renderEditableEmoji("navSpicesEmoji", "🌿")}</span> <span>{renderEditable("navSpicesText", "Spices Nav Text", siteContent.navSpicesText)}</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveSection("Pickles")}
+                      className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 ${activeSection === "Pickles" ? "bg-red-800 text-white shadow" : "text-stone-600"}`}
+                    >
+                      <span>{renderEditableEmoji("navPicklesEmoji", "🏺")}</span> <span>{renderEditable("navPicklesText", "Pickles Nav Text", siteContent.navPicklesText)}</span>
+                    </button>
+                  </nav>
+
+                  {/* Right Actions */}
+                  <div className="flex items-center gap-3">
+                    {currentUser ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setProfileForm({
+                              id: currentUser.id || currentUser.mobile,
+                              name: currentUser.name,
+                              password: ""
+                            });
+                            setShowProfileModal(true);
+                          }}
+                          className="text-stone-700 font-bold text-xs bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl border flex items-center gap-1"
+                          title="Account Profile & Change Password"
+                        >
+                          <span>👤 {currentUser.name}</span>
+                        </button>
+                        <button onClick={handleLogout} className="text-stone-400 hover:text-stone-700 text-xs">
+                          Log Out
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setShowLoginModal(true); setLoginError(""); }}
+                        className="bg-white hover:bg-stone-50 border border-stone-300 text-stone-800 px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5"
+                      >
+                        <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                        <span>{renderEditable("navSignInText", "Sign In Text", siteContent.navSignInText || "Sign In")}</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => setIsCartOpen(true)}
+                      className="relative flex items-center gap-2 bg-gradient-to-r from-sky-700 to-amber-700 text-white px-4 py-2.5 rounded-full font-bold shadow-md transition active:scale-95"
+                    >
+                      <span>{renderEditableEmoji("navCartEmoji", "🛍️")}</span>
+                      <span className="hidden sm:inline">{renderEditable("navCartText", "Cart Button Text", siteContent.navCartText)}</span>
+                      {totalItemsCount > 0 && (
+                        <span className="bg-white text-sky-900 font-extrabold text-xs px-2 py-0.5 rounded-full shadow animate-pulse">
+                          {totalItemsCount}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </header>
+
+              {/* ================= HERO WITH REAL OCEAN WAVES VIDEO BACKGROUND & LIVE MOVING WAVES ================= */}
+              <section className="ocean-video-hero text-white pt-16 pb-28 relative">
+                {/* Real Looping Coastal Ocean Waves Video with Guaranteed Autoplay */}
+                <video
+                  ref={heroVideoRef}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  poster={siteContent.heroPosterImage || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80"}
+                >
+                  <source src={siteContent.heroBgVideo || "https://cdn.coverr.co/videos/coverr-waves-crashing-on-a-tropical-beach/1080p.mp4"} type="video/mp4" />
+                  <source src="https://cdn.coverr.co/videos/coverr-foamy-waves/1080p.mp4" type="video/mp4" />
+                  <source src="https://assets.mixkit.co/videos/preview/mixkit-waves-in-the-water-1164-large.mp4" type="video/mp4" />
+                </video>
+                <div className="ocean-video-overlay"></div>
+
+                {/* Live Rolling Ocean Surf Waves (4-Tier Continuous 60FPS Moving Ocean Waves, No Bubbles) */}
+                <div className="hero-waves-container">
+                  {/* Tier 1: Deep Ocean Rolling Swell */}
+                  <svg className="wave-svg wave-layer-deep" viewBox="0 0 2400 120" preserveAspectRatio="none">
+                    <path
+                      d="M0,45 C300,10 600,80 900,35 C1200,0 1500,80 1800,35 C2100,0 2400,45 L2400,120 L0,120 Z"
+                      fill="rgba(8, 47, 73, 0.85)"
+                    />
+                  </svg>
+                  {/* Tier 2: Mid Aqua Surge Wave */}
+                  <svg className="wave-svg wave-layer-mid" viewBox="0 0 2400 120" preserveAspectRatio="none">
+                    <path
+                      d="M0,60 C320,15 580,95 900,50 C1220,15 1480,95 1800,50 C2120,15 2400,60 L2400,120 L0,120 Z"
+                      fill="rgba(14, 116, 144, 0.65)"
+                    />
+                  </svg>
+                  {/* Tier 3: Coastal Turquoise Crest Wave */}
+                  <svg className="wave-svg wave-layer-front" viewBox="0 0 2400 120" preserveAspectRatio="none">
+                    <path
+                      d="M0,75 C250,30 550,110 850,60 C1150,20 1450,100 1750,55 C2050,20 2400,75 L2400,120 L0,120 Z"
+                      fill="rgba(6, 182, 212, 0.55)"
+                    />
+                  </svg>
+                  {/* Tier 4: Pure White Sea Foam Surf Line */}
+                  <svg className="wave-svg wave-layer-foam" viewBox="0 0 2400 120" preserveAspectRatio="none">
+                    <path
+                      d="M0,72 C250,27 550,107 850,57 C1150,17 1450,97 1750,52 C2050,17 2400,72 L2400,82 C2050,27 1750,107 1450,27 C1150,107 850,67 550,117 C250,37 0,82 Z"
+                      fill="rgba(255, 255, 255, 0.85)"
+                    />
+                  </svg>
+                </div>
+
+                {isOwner && isLiveEditActive && (
+                  <button
+                    onClick={() => setEditingImageModal({
+                      key: "heroPosterImage",
+                      label: "Hero Ocean Background Photo / Poster",
+                      currentUrl: siteContent.heroPosterImage || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80"
+                    })}
+                    className="absolute top-4 right-4 z-30 bg-black/75 hover:bg-black text-amber-300 font-bold text-xs px-3 py-1.5 rounded-xl border border-amber-400 shadow-xl flex items-center gap-1.5"
+                  >
+                    <span>📷 Change Hero Ocean Image</span>
+                  </button>
+                )}
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4 relative z-20">
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-sky-200 text-xs font-bold uppercase tracking-wider shadow-lg">
+                    <span>{renderEditableEmoji("heroBadgeEmoji", "🌊")}</span>
+                    <span>{renderEditable("heroBadge", "Hero Badge Text", siteContent.heroBadge)}</span>
+                  </div>
+
+                  <h2 className="font-brand text-3xl sm:text-5xl font-black text-amber-100 tracking-tight leading-tight drop-shadow-lg">
+                    {renderEditable("heroHeading", "Hero Main Heading", siteContent.heroHeading)}
+                  </h2>
+
+                  <p className="font-hand text-2xl sm:text-3xl text-amber-300 drop-shadow">
+                    {renderEditable("heroQuote", "Hero Tagline Quote", siteContent.heroQuote)}
+                  </p>
+                </div>
+              </section>
+
+              {/* ================= 3 HIGHLY PICTORIAL SECTION SHOWCASES ================= */}
+              <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* 1. Dry Fish Showcase */}
+                  <div
+                    onClick={() => setActiveSection("Dry Fish")}
+                    className={`cursor-pointer rounded-3xl overflow-hidden shadow-xl border-2 transition-all duration-300 group ${
+                      activeSection === "Dry Fish" ? "border-sky-500 ring-4 ring-sky-200 scale-[1.02]" : "border-white hover:border-sky-300"
+                    }`}
+                  >
+                    <div className="relative h-48 overflow-hidden bg-sky-950">
+                      <img
+                        src={siteContent.dryFishCardImage || "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"}
+                        alt="Sun-Dried Fish"
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                      />
+                      {isOwner && isLiveEditActive && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImageModal({
+                              key: "dryFishCardImage",
+                              label: "Sun-Dried Fish Card Photo",
+                              currentUrl: siteContent.dryFishCardImage || "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
+                            });
+                          }}
+                          className="absolute top-3 right-3 bg-black/80 hover:bg-black text-amber-300 font-bold text-xs px-2.5 py-1 rounded-xl shadow border border-amber-400 z-30 flex items-center gap-1"
+                        >
+                          📷 Change Photo
+                        </button>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-sky-950 via-sky-950/40 to-transparent"></div>
+                      <div className="absolute bottom-3 left-4 text-white">
+                        <span className="bg-sky-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                          {renderEditable("dryFishCardBadge", "Dry Fish Badge", siteContent.dryFishCardBadge)}
+                        </span>
+                        <h3 className="font-brand font-black text-xl text-sky-100 mt-1">
+                          {renderEditable("dryFishCardTitle", "Dry Fish Title", siteContent.dryFishCardTitle)}
+                        </h3>
+                        <p className="text-xs text-sky-200 font-medium">
+                          {renderEditable("dryFishCardTagline", "Dry Fish Tagline", siteContent.dryFishCardTagline)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Spices Showcase */}
+                  <div
+                    onClick={() => setActiveSection("Spices")}
+                    className={`cursor-pointer rounded-3xl overflow-hidden shadow-xl border-2 transition-all duration-300 group ${
+                      activeSection === "Spices" ? "border-amber-500 ring-4 ring-amber-200 scale-[1.02]" : "border-white hover:border-amber-300"
+                    }`}
+                  >
+                    <div className="relative h-48 overflow-hidden bg-amber-950">
+                      <img
+                        src={siteContent.spicesCardImage || "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80"}
+                        alt="Coastal Spices"
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                      />
+                      {isOwner && isLiveEditActive && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImageModal({
+                              key: "spicesCardImage",
+                              label: "Coastal Spices Card Photo",
+                              currentUrl: siteContent.spicesCardImage || "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80"
+                            });
+                          }}
+                          className="absolute top-3 right-3 bg-black/80 hover:bg-black text-amber-300 font-bold text-xs px-2.5 py-1 rounded-xl shadow border border-amber-400 z-30 flex items-center gap-1"
+                        >
+                          📷 Change Photo
+                        </button>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-amber-950 via-amber-950/40 to-transparent"></div>
+                      <div className="absolute bottom-3 left-4 text-white">
+                        <span className="bg-amber-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                          {renderEditable("spicesCardBadge", "Spices Badge", siteContent.spicesCardBadge)}
+                        </span>
+                        <h3 className="font-brand font-black text-xl text-amber-100 mt-1">
+                          {renderEditable("spicesCardTitle", "Spices Title", siteContent.spicesCardTitle)}
+                        </h3>
+                        <p className="text-xs text-amber-200 font-medium">
+                          {renderEditable("spicesCardTagline", "Spices Tagline", siteContent.spicesCardTagline)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Pickles Showcase */}
+                  <div
+                    onClick={() => setActiveSection("Pickles")}
+                    className={`cursor-pointer rounded-3xl overflow-hidden shadow-xl border-2 transition-all duration-300 group ${
+                      activeSection === "Pickles" ? "border-red-500 ring-4 ring-red-200 scale-[1.02]" : "border-white hover:border-red-300"
+                    }`}
+                  >
+                    <div className="relative h-48 overflow-hidden bg-red-950">
+                      <img
+                        src={siteContent.picklesCardImage || "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80"}
+                        alt="Barni Pickles"
+                        className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+                      />
+                      {isOwner && isLiveEditActive && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingImageModal({
+                              key: "picklesCardImage",
+                              label: "Barni Pickles Card Photo",
+                              currentUrl: siteContent.picklesCardImage || "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80"
+                            });
+                          }}
+                          className="absolute top-3 right-3 bg-black/80 hover:bg-black text-amber-300 font-bold text-xs px-2.5 py-1 rounded-xl shadow border border-amber-400 z-30 flex items-center gap-1"
+                        >
+                          📷 Change Photo
+                        </button>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-950 via-red-950/40 to-transparent"></div>
+                      <div className="absolute bottom-3 left-4 text-white">
+                        <span className="bg-red-700 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                          {renderEditable("picklesCardBadge", "Pickles Badge", siteContent.picklesCardBadge)}
+                        </span>
+                        <h3 className="font-brand font-black text-xl text-red-100 mt-1">
+                          {renderEditable("picklesCardTitle", "Pickles Title", siteContent.picklesCardTitle)}
+                        </h3>
+                        <p className="text-xs text-red-200 font-medium">
+                          {renderEditable("picklesCardTagline", "Pickles Tagline", siteContent.picklesCardTagline)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </section>
+
+              {/* PRODUCT CATALOG GRID */}
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-1 w-full">
+                {/* Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
+                  <div>
+                    <h3 className="font-brand text-2xl font-black text-stone-900">
+                      {activeSection === "All" ? renderEditable("catalogTitle", "Catalog Title", siteContent.catalogTitle) : `${activeSection} Menu`}
+                    </h3>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      {renderEditable("catalogSubtitle", "Catalog Subheading", siteContent.catalogSubtitle)}
+                    </p>
+                  </div>
+
+                  <div className="relative w-full sm:w-80">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search Bombil, Kolambi, Masala..."
+                      className="w-full bg-white border border-stone-300 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-700"
+                    />
+                    <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                  </div>
+                </div>
+
+                {/* Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredProducts.map(product => {
+                    const currentVIdx = selectedVariants[product.id] || 0;
+                    const variant = product.variants[currentVIdx] || product.variants[0];
+                    const isOutOfStock = product.stock <= 0;
+
+                    return (
+                      <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+                        <div className="relative h-64 overflow-hidden bg-stone-100 cursor-pointer" onClick={() => setQuickViewProduct(product)}>
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isOutOfStock ? 'grayscale opacity-60' : ''}`}
+                            loading="lazy"
+                          />
+                          {isOwner && isLiveEditActive && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingImageModal({
+                                  key: `product:${product.id}`,
+                                  label: `Photo for ${product.name}`,
+                                  currentUrl: product.image
+                                });
+                              }}
+                              className="absolute top-3 right-3 bg-black/80 hover:bg-black text-amber-300 font-bold text-[11px] px-2.5 py-1 rounded-xl shadow border border-amber-400 z-30 flex items-center gap-1"
+                            >
+                              📷 Change Photo
+                            </button>
+                          )}
+                          <div className="absolute top-3 left-3 flex flex-col gap-1">
+                            <span
+                              onClick={(e) => {
+                                if (isOwner && isLiveEditActive) {
+                                  e.stopPropagation();
+                                  const newTag = prompt("Edit badge / emoji for " + product.name + ":", product.tag);
+                                  if (newTag !== null && newTag.trim()) {
+                                    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, tag: newTag.trim() } : p));
+                                  }
+                                }
+                              }}
+                              className={`bg-stone-900/90 text-amber-200 font-bold text-[10px] px-2.5 py-1 rounded-full shadow ${
+                                isOwner && isLiveEditActive ? "cursor-pointer border border-dashed border-amber-400 hover:bg-stone-800" : ""
+                              }`}
+                              title={isOwner && isLiveEditActive ? "Owner: Click to change badge / emoji tag" : ""}
+                            >
+                              {product.tag} {isOwner && isLiveEditActive && <span>✏️</span>}
+                            </span>
+                          </div>
+
+                          {isOutOfStock && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <span className="bg-red-700 text-white font-black text-sm px-4 py-1 rounded-full uppercase tracking-widest shadow-xl">
+                                Sold Out
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          <div>
+                            <div className="text-[11px] font-bold text-sky-800 uppercase tracking-wider">{product.category}</div>
+                            <h4
+                              onClick={(e) => {
+                                if (isOwner && isLiveEditActive) {
+                                  e.stopPropagation();
+                                  const n = prompt("Edit product name:", product.name);
+                                  if (n && n.trim()) {
+                                    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, name: n.trim() } : p));
+                                  }
+                                }
+                              }}
+                              className={`font-brand font-bold text-lg text-stone-900 mt-0.5 line-clamp-1 ${
+                                isOwner && isLiveEditActive ? "cursor-pointer border-2 border-dashed border-amber-400 bg-amber-100/50 rounded px-1 -mx-1" : ""
+                              }`}
+                              title={isOwner && isLiveEditActive ? "Click to edit product title" : ""}
+                            >
+                              {product.name} {isOwner && isLiveEditActive && <span className="text-xs">✏️</span>}
+                            </h4>
+                            <p
+                              onClick={(e) => {
+                                if (isOwner && isLiveEditActive) {
+                                  e.stopPropagation();
+                                  const t = prompt("Edit tagline for " + product.name + ":", product.tagline);
+                                  if (t !== null) {
+                                    setProducts(prev => prev.map(p => p.id === product.id ? { ...p, tagline: t.trim() } : p));
+                                  }
+                                }
+                              }}
+                              className={`text-xs text-stone-500 font-medium italic mt-1 line-clamp-1 ${
+                                isOwner && isLiveEditActive ? "cursor-pointer border-2 border-dashed border-amber-400 bg-amber-100/50 rounded px-1 -mx-1" : ""
+                              }`}
+                              title={isOwner && isLiveEditActive ? "Click to edit product tagline" : ""}
+                            >
+                              "{product.tagline}" {isOwner && isLiveEditActive && <span className="text-xs">✏️</span>}
+                            </p>
+                          </div>
+
+                          {/* Pack selector */}
+                          <div>
+                            <div className="grid grid-cols-2 gap-1.5">
+                              {product.variants.map((v, idx) => (
+                                <button
+                                  key={v.size}
+                                  onClick={() => setSelectedVariants(prev => ({ ...prev, [product.id]: idx }))}
+                                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition truncate ${
+                                    currentVIdx === idx ? "border-sky-700 bg-sky-50 text-sky-900 font-bold ring-1 ring-sky-700" : "border-stone-200 text-stone-700"
+                                  }`}
+                                >
+                                  {v.size}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="pt-3 border-t flex items-center justify-between">
+                            <div>
+                              <div className="text-xl font-black text-stone-900">₹{variant.price}</div>
+                              <div className="text-[10px] text-emerald-700 font-semibold">In Stock: {product.stock} units</div>
+                            </div>
+
+                            <button
+                              disabled={isOutOfStock}
+                              onClick={() => addToCart(product, currentVIdx)}
+                              className={`px-4 py-2 rounded-xl font-bold text-xs shadow transition ${
+                                isOutOfStock ? "bg-stone-300 text-stone-500 cursor-not-allowed" : "bg-sky-800 hover:bg-sky-900 text-white active:scale-95"
+                              }`}
+                            >
+                              {isOutOfStock ? "Sold Out" : "+ Add to Cart"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </main>
+            </>
+          )}
+
+          {/* ================= STEP 1: CUSTOMER ADDRESS CHECKOUT MODAL ================= */}
+          {showCheckoutDetailsModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200">
+                <div className="p-5 bg-gradient-to-r from-sky-900 to-amber-900 text-white flex justify-between items-center">
+                  <div>
+                    <h3 className="font-brand font-black text-xl">1. Delivery Address</h3>
+                    <p className="text-xs text-sky-200">Where should we deliver your coastal order?</p>
+                  </div>
+                  <button onClick={() => setShowCheckoutDetailsModal(false)} className="text-sky-200 hover:text-white text-xl font-bold">✕</button>
+                </div>
+
+                <form onSubmit={handleDetailsSubmit} className="p-6 space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={checkoutForm.fullName}
+                        onChange={(e) => setCheckoutForm({ ...checkoutForm, fullName: e.target.value })}
+                        placeholder="e.g. Ramesh Patil"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">WhatsApp / Mobile *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={checkoutForm.mobile}
+                        onChange={(e) => setCheckoutForm({ ...checkoutForm, mobile: e.target.value })}
+                        placeholder="10-digit number"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Street Address (House/Flat, Road, Area) *</label>
+                    <input
+                      type="text"
+                      required
+                      value={checkoutForm.streetAddress}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, streetAddress: e.target.value })}
+                      placeholder="Flat 102, Beach View Apts..."
+                      className="w-full border rounded-xl px-3 py-2"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Landmark</label>
+                      <input
+                        type="text"
+                        value={checkoutForm.landmark}
+                        onChange={(e) => setCheckoutForm({ ...checkoutForm, landmark: e.target.value })}
+                        placeholder="Near Temple"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">City *</label>
+                      <input
+                        type="text"
+                        required
+                        value={checkoutForm.city}
+                        onChange={(e) => setCheckoutForm({ ...checkoutForm, city: e.target.value })}
+                        placeholder="Mumbai"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Pincode *</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength="6"
+                        value={checkoutForm.pincode}
+                        onChange={(e) => setCheckoutForm({ ...checkoutForm, pincode: e.target.value })}
+                        placeholder="400001"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-stone-500">Order Total:</div>
+                      <div className="text-xl font-black text-stone-900">₹{cartTotal}</div>
+                    </div>
+                    <button
+                      type="submit"
+                      className="bg-sky-800 hover:bg-sky-900 text-white font-black px-6 py-3 rounded-xl shadow-md transition"
+                    >
+                      Proceed to Instant Payment →
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= STEP 2: AUTO PAYMENT GATEWAY (AUTO-FETCH & QR) ================= */}
+          {showAutoPaymentGatewayModal && pendingOrder && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-stone-200 text-center space-y-4 p-6">
+                
+                {/* Header */}
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <h3 className="font-brand font-black text-xl text-stone-900">CKP Auto Payment Gateway</h3>
+                    <p className="text-[11px] text-stone-500">Auto-detecting payment like Amazon Pay</p>
+                  </div>
+                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                {/* Amount Highlight */}
+                <div className="bg-sky-50 p-3 rounded-2xl border border-sky-200">
+                  <div className="text-xs text-sky-900 font-semibold">Total Payable Amount:</div>
+                  <div className="text-3xl font-black text-sky-950">₹{pendingOrder.total}</div>
+                  <div className="text-[10px] text-sky-700 font-mono mt-0.5">UPI ID: {ownerConfig.upiId}</div>
+                </div>
+
+                {/* DYNAMIC QR CODE FOR THIS ORDER */}
+                <div className="relative inline-block p-3 bg-white rounded-2xl shadow-md border-2 border-dashed border-sky-400">
+                  <img src={upiQrUrl} alt="Order QR Code" className="w-48 h-48 mx-auto rounded-lg" />
+                  
+                  {paymentStep === "detecting" && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-4">
+                      <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="font-bold text-sky-900 text-xs mt-3">Auto-Fetching Payment Status...</div>
+                      <div className="text-[10px] text-stone-500">Verifying transaction with bank network</div>
+                    </div>
+                  )}
+
+                  {paymentStep === "confirmed" && (
+                    <div className="absolute inset-0 bg-emerald-50/95 rounded-2xl flex flex-col items-center justify-center p-4">
+                      <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">✓</div>
+                      <div className="font-bold text-emerald-900 text-sm mt-2">Payment Confirmed!</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Auto Status Bar */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-stone-600">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>Live Listening for Payment... ({Math.floor(paymentTimer / 60)}:{(paymentTimer % 60).toString().padStart(2, '0')})</span>
+                  </div>
+
+                  {/* Deep link for mobile users */}
+                  <a
+                    href={dynamicUpiUri}
+                    onClick={() => setTimeout(triggerAutoPaymentConfirmation, 3000)}
+                    className="block bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl shadow text-xs"
+                  >
+                    ⚡ Tap to Pay via GPay / PhonePe / Paytm
+                  </a>
+
+                  {/* Manual trigger button for desktop testers */}
+                  <button
+                    onClick={triggerAutoPaymentConfirmation}
+                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-bold py-2 rounded-xl text-xs shadow"
+                  >
+                    Paid via UPI App? Click to Auto-Verify & Confirm
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= ORDER CONFIRMATION MODAL ================= */}
+          {orderSuccessData && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 text-center space-y-4">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner">
+                  ✓
+                </div>
+                <h3 className="font-brand font-black text-2xl text-stone-900">Order Confirmed! 🙏</h3>
+                <p className="text-xs text-stone-500">Order #{orderSuccessData.orderId} • Status: {orderSuccessData.status}</p>
+
+                <div className="bg-stone-50 p-4 rounded-2xl border text-left text-xs space-y-2">
+                  <div className="font-bold text-stone-900">{orderSuccessData.customer.fullName} ({orderSuccessData.customer.mobile})</div>
+                  <div className="text-stone-600 text-[11px]">{orderSuccessData.customer.streetAddress}, {orderSuccessData.customer.city} - {orderSuccessData.customer.pincode}</div>
+                  <div className="border-t pt-2 space-y-1">
+                    {orderSuccessData.items.map(i => (
+                      <div key={i.id} className="flex justify-between text-stone-700">
+                        <span>{i.name} ({i.size}) x{i.quantity}</span>
+                        <span className="font-bold">₹{i.price * i.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t pt-2 flex justify-between font-black text-sm text-stone-900">
+                    <span>Total Paid</span>
+                    <span>₹{orderSuccessData.total}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button onClick={() => window.print()} className="flex-1 py-2 border rounded-xl font-bold text-xs">🖨️ Print Receipt</button>
+                  <button onClick={() => setOrderSuccessData(null)} className="flex-1 py-2 bg-sky-800 text-white rounded-xl font-bold text-xs">Done</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= SAME UNIFIED LOGIN MODAL ================= */}
+          {showLoginModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <h3 className="font-brand font-black text-xl text-stone-900">
+                      {isRegisterMode ? "Create Customer Account" : "Sign In to CKP's Crunch"}
+                    </h3>
+                    <p className="text-xs text-stone-500">Unified portal for Customers & Owner</p>
+                  </div>
+                  <button onClick={() => { setShowLoginModal(false); setLoginError(""); }} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                {loginError && (
+                  <p className="bg-red-50 text-red-700 p-2.5 rounded-xl text-xs font-bold border border-red-200">{loginError}</p>
+                )}
+
+                <form onSubmit={handleUnifiedLogin} className="space-y-3.5 text-xs text-left">
+                  {isRegisterMode && (
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Your Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={loginName}
+                        onChange={(e) => setLoginName(e.target.value)}
+                        placeholder="e.g. Anand Kulkarni"
+                        className="w-full border rounded-xl px-3 py-2"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Mobile Number / User ID *</label>
+                    <input
+                      type="text"
+                      required
+                      autoFocus
+                      value={loginId}
+                      onChange={(e) => setLoginId(e.target.value)}
+                      placeholder="Enter Mobile Number or ID"
+                      className="w-full border rounded-xl px-3 py-2 font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={loginPass}
+                      onChange={(e) => setLoginPass(e.target.value)}
+                      placeholder="Enter Password"
+                      className="w-full border rounded-xl px-3 py-2 font-semibold"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-sky-800 hover:bg-sky-900 text-white font-bold py-2.5 rounded-xl shadow mt-2 text-xs"
+                  >
+                    {isRegisterMode ? "Register & Sign In" : "Sign In"}
+                  </button>
+
+                  <div className="pt-2 text-center text-[11px] text-stone-500">
+                    {isRegisterMode ? (
+                      <span>Already have an account? <button type="button" onClick={() => { setIsRegisterMode(false); setLoginError(""); }} className="font-bold text-sky-800 underline">Sign In</button></span>
+                    ) : (
+                      <span>New customer? <button type="button" onClick={() => { setIsRegisterMode(true); setLoginError(""); }} className="font-bold text-sky-800 underline">Register with Mobile</button></span>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= PROFILE & PASSWORD CHANGE MODAL (OWNER & USER) ================= */}
+          {showProfileModal && currentUser && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <h3 className="font-brand font-black text-lg text-stone-900">
+                    {currentUser.role === "owner" ? "🔑 Change Owner ID & Password" : "👤 My Profile Settings"}
+                  </h3>
+                  <button onClick={() => setShowProfileModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="space-y-3 text-xs text-left">
+                  {currentUser.role === "owner" ? (
+                    <>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Owner User ID</label>
+                        <input
+                          type="text"
+                          required
+                          value={profileForm.id}
+                          onChange={(e) => setProfileForm({ ...profileForm, id: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2 font-bold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">New Owner Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={profileForm.password}
+                          onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+                          placeholder="Enter new password"
+                          className="w-full border rounded-xl px-3 py-2 font-bold"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">Your Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={profileForm.name}
+                          onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                          className="w-full border rounded-xl px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-stone-700 mb-1">New Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={profileForm.password}
+                          onChange={(e) => setProfileForm({ ...profileForm, password: e.target.value })}
+                          placeholder="Enter new password"
+                          className="w-full border rounded-xl px-3 py-2"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="pt-2">
+                    <button type="submit" className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2 rounded-xl shadow">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= SLIDE-OUT CART ================= */}
+          {isCartOpen && (
+            <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm flex justify-end">
+              <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between">
+                <div className="p-4 border-b flex items-center justify-between bg-stone-50">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">🛍️</span>
+                    <h3 className="font-brand font-black text-lg text-stone-900">Your Fresh Cart</h3>
+                    <span className="bg-sky-100 text-sky-900 text-xs px-2 py-0.5 rounded-full font-bold">
+                      {totalItemsCount} items
+                    </span>
+                  </div>
+                  <button onClick={() => setIsCartOpen(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {cart.length === 0 ? (
+                    <div className="text-center py-16 text-stone-400">
+                      <span className="text-5xl">🌊</span>
+                      <p className="font-bold text-stone-700 mt-2 text-sm">Your cart is empty!</p>
+                      <p className="text-xs text-stone-500">Pick some fresh crispy fish, spices, or barni pickles.</p>
+                    </div>
+                  ) : (
+                    cart.map(item => (
+                      <div key={item.id} className="flex gap-3 bg-stone-50 p-3 rounded-2xl border">
+                        <img src={item.image} className="w-16 h-16 rounded-xl object-cover border" />
+                        <div className="flex-1 flex flex-col justify-between">
+                          <div>
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-bold text-xs text-stone-900">{item.name}</h4>
+                              <button onClick={() => removeCartItem(item.id)} className="text-stone-400 hover:text-red-600 text-xs font-bold ml-1">✕</button>
+                            </div>
+                            <span className="text-[11px] text-sky-800 font-semibold">{item.size}</span>
+                          </div>
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="font-black text-sm text-stone-900">₹{item.price * item.quantity}</span>
+                            <div className="flex items-center border rounded-lg bg-white overflow-hidden text-xs">
+                              <button onClick={() => updateCartQty(item.id, -1)} className="px-2 py-1 font-bold">-</button>
+                              <span className="px-2 font-bold">{item.quantity}</span>
+                              <button onClick={() => updateCartQty(item.id, 1)} className="px-2 py-1 font-bold">+</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {cart.length > 0 && (
+                  <div className="p-4 border-t bg-stone-50 space-y-3">
+                    <div className="space-y-1 text-xs text-stone-600">
+                      <div className="flex justify-between"><span>Items Subtotal</span><span>₹{cartSubtotal}</span></div>
+                      <div className="flex justify-between"><span>Delivery</span><span>{shippingCharge === 0 ? <strong className="text-emerald-700">FREE</strong> : `₹${shippingCharge}`}</span></div>
+                      <div className="flex justify-between text-stone-900 font-extrabold text-base pt-1 border-t">
+                        <span>Total</span><span>₹{cartTotal}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={startCheckout}
+                      className="w-full bg-sky-800 hover:bg-sky-900 text-white font-black py-3 rounded-2xl shadow transition text-sm"
+                    >
+                      Checkout (₹{cartTotal})
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= OWNER IN-PLACE TEXT QUICK EDITOR MODAL ================= */}
+          {editingTextModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Owner Text Editor</span>
+                    <h3 className="font-brand font-black text-lg text-stone-900 mt-1">Edit: {editingTextModal.label}</h3>
+                  </div>
+                  <button onClick={() => setEditingTextModal(null)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Sentence / Tagline Content:</label>
+                  <textarea
+                    rows={editingTextModal.value.length > 60 ? 4 : 2}
+                    value={editingTextModal.value}
+                    onChange={(e) => setEditingTextModal({ ...editingTextModal, value: e.target.value })}
+                    className="w-full border-2 border-amber-300 focus:border-amber-600 rounded-xl p-3 text-xs font-medium focus:outline-none"
+                    autoFocus
+                  />
+                  <div className="text-[10px] text-stone-400 mt-1">Changes are saved live across the entire website and saved permanently in your browser.</div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setEditingTextModal(null)}
+                    className="flex-1 py-2.5 border rounded-xl font-bold text-xs text-stone-600 hover:bg-stone-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSiteContent(prev => ({ ...prev, [editingTextModal.key]: editingTextModal.value }));
+                      setEditingTextModal(null);
+                    }}
+                    className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow"
+                  >
+                    Save Line & Update Live ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* ================= PRODUCT QUICK VIEW MODAL ================= */}
+          {quickViewProduct && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200">
+                <div className="relative h-64 bg-stone-100">
+                  <img src={quickViewProduct.image} alt={quickViewProduct.name} className="w-full h-full object-cover" />
+                  <button onClick={() => setQuickViewProduct(null)} className="absolute top-4 right-4 bg-black/60 hover:bg-black text-white w-9 h-9 rounded-full font-bold flex items-center justify-center">✕</button>
+                  <div className="absolute bottom-3 left-4">
+                    <span className="bg-stone-900/90 text-amber-200 font-bold text-xs px-3 py-1 rounded-full">{quickViewProduct.tag}</span>
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div>
+                    <span className="text-xs font-bold text-sky-800 uppercase tracking-wider">{quickViewProduct.category}</span>
+                    <h3 className="font-brand font-black text-2xl text-stone-900 mt-1">{quickViewProduct.name}</h3>
+                    <p className="text-xs text-stone-500 italic mt-0.5 font-medium">"{quickViewProduct.tagline}"</p>
+                  </div>
+                  <p className="text-xs text-stone-700 leading-relaxed bg-stone-50 p-3.5 rounded-2xl border">{quickViewProduct.description}</p>
+                  
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div>
+                      <div className="text-2xl font-black text-stone-900">₹{quickViewProduct.variants[0]?.price}</div>
+                      <div className="text-xs text-emerald-700 font-semibold">Available Units: {quickViewProduct.stock}</div>
+                    </div>
+                    <button
+                      onClick={() => { addToCart(quickViewProduct); setQuickViewProduct(null); }}
+                      disabled={quickViewProduct.stock <= 0}
+                      className="bg-sky-800 hover:bg-sky-900 disabled:bg-stone-300 text-white font-black px-6 py-3 rounded-2xl text-xs shadow"
+                    >
+                      {quickViewProduct.stock > 0 ? "+ Add to Cart" : "Sold Out"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= OWNER IMAGE CUSTOMIZER MODAL (UPLOAD FROM PC OR URL) ================= */}
+          {editingImageModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <span className="bg-sky-100 text-sky-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Image & Photo Customizer</span>
+                    <h3 className="font-brand font-black text-lg text-stone-900 mt-1">{editingImageModal.label}</h3>
+                  </div>
+                  <button onClick={() => setEditingImageModal(null)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                {/* Photo Preview */}
+                <div className="relative h-44 rounded-2xl overflow-hidden bg-stone-100 border">
+                  <img
+                    src={editingImageModal.currentUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"; }}
+                  />
+                  <div className="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded">
+                    Current Image Preview
+                  </div>
+                </div>
+
+                {/* Option 1: Choose from Computer */}
+                <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200 space-y-1.5">
+                  <label className="block text-xs font-black text-amber-950 flex items-center gap-1.5">
+                    <span>📁</span> Option A: Upload Photo from Your Device / Computer
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setEditingImageModal(prev => ({ ...prev, currentUrl: ev.target.result }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
+                  />
+                  <p className="text-[10px] text-amber-800">Select any image (PNG, JPG, WebP) from your computer. It updates the website instantly.</p>
+                </div>
+
+                {/* Option 2: Paste Web URL */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-stone-700">
+                    🔗 Option B: Paste Image Web URL
+                  </label>
+                  <input
+                    type="text"
+                    value={editingImageModal.currentUrl}
+                    onChange={(e) => setEditingImageModal({ ...editingImageModal, currentUrl: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full border rounded-xl px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-sky-700"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t">
+                  <button
+                    onClick={() => setEditingImageModal(null)}
+                    className="flex-1 py-2.5 border rounded-xl font-bold text-xs text-stone-600 hover:bg-stone-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const url = editingImageModal.currentUrl;
+                      if (editingImageModal.key.startsWith("product:")) {
+                        const pid = editingImageModal.key.replace("product:", "");
+                        setProducts(prev => prev.map(p => p.id === pid ? { ...p, image: url } : p));
+                      } else {
+                        setSiteContent(prev => ({ ...prev, [editingImageModal.key]: url }));
+                      }
+                      setEditingImageModal(null);
+                    }}
+                    className="flex-1 py-2.5 bg-sky-800 hover:bg-sky-900 text-white rounded-xl font-bold text-xs shadow"
+                  >
+                    Save & Apply Photo ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= OWNER LOGO CUSTOMIZER MODAL ================= */}
+          {editingLogoModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Store Logo & Brand Customizer</span>
+                    <h3 className="font-brand font-black text-lg text-stone-900 mt-1">Change Store Logo</h3>
+                  </div>
+                  <button onClick={() => setEditingLogoModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                {/* Choice: Emoji vs Custom Image */}
+                <div className="flex gap-2 bg-stone-100 p-1.5 rounded-2xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setSiteContent(prev => ({ ...prev, logoType: "emoji" }))}
+                    className={`flex-1 py-2 rounded-xl transition ${siteContent.logoType !== "image" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}
+                  >
+                    Emoji Icon Logo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSiteContent(prev => ({ ...prev, logoType: "image" }))}
+                    className={`flex-1 py-2 rounded-xl transition ${siteContent.logoType === "image" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}
+                  >
+                    Custom Photo / Image Logo
+                  </button>
+                </div>
+
+                {siteContent.logoType === "image" ? (
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center gap-3 bg-stone-50 p-3 rounded-2xl border">
+                      <div className="w-16 h-16 rounded-2xl bg-stone-200 overflow-hidden border shrink-0">
+                        {siteContent.logoImageUrl ? (
+                          <img src={siteContent.logoImageUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-stone-400 text-[10px] text-center p-1 font-bold">No Image</div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <label className="block font-bold text-stone-800 mb-1">Upload Logo from Computer</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setSiteContent(prev => ({ ...prev, logoImageUrl: ev.target.result }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-stone-900 file:text-white cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Or Paste Logo Image URL</label>
+                      <input
+                        type="text"
+                        value={siteContent.logoImageUrl || ""}
+                        onChange={(e) => setSiteContent({ ...siteContent, logoImageUrl: e.target.value })}
+                        placeholder="https://..."
+                        className="w-full border rounded-xl px-3 py-2 text-xs"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 text-xs">
+                    <div className="text-center py-3 bg-stone-50 rounded-2xl border">
+                      <span className="text-5xl">{siteContent.logoEmoji || "🐟"}</span>
+                      <div className="text-[11px] text-stone-500 mt-2 font-semibold">Active Logo Emoji</div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Type or pick any Emoji</label>
+                      <input
+                        type="text"
+                        value={siteContent.logoEmoji || "🐟"}
+                        onChange={(e) => setSiteContent({ ...siteContent, logoEmoji: e.target.value })}
+                        className="w-full border rounded-xl px-3 py-2 text-center text-2xl font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-stone-500 font-bold mb-1.5">Quick Suggestions:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {["🐟", "🦐", "🦀", "🌊", "🌴", "🌿", "🏺", "🌶️", "🔥", "👑", "⭐", "✨"].map(em => (
+                          <button
+                            key={em}
+                            type="button"
+                            onClick={() => setSiteContent({ ...siteContent, logoEmoji: em })}
+                            className="w-10 h-10 rounded-xl border bg-white hover:bg-stone-100 text-xl flex items-center justify-center transition"
+                          >
+                            {em}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setEditingLogoModal(false)}
+                    className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2.5 rounded-xl shadow text-xs"
+                  >
+                    Save Logo Settings ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= OWNER EMOJI CUSTOMIZER MODAL ================= */}
+          {editingEmojiModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Emoji Customizer</span>
+                    <h3 className="font-brand font-black text-lg text-stone-900 mt-1">Change Emoji</h3>
+                  </div>
+                  <button onClick={() => setEditingEmojiModal(null)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                </div>
+
+                <div className="text-center py-2 bg-stone-50 rounded-2xl border">
+                  <span className="text-4xl">{editingEmojiModal.value}</span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Type Any Emoji / Symbol:</label>
+                  <input
+                    type="text"
+                    value={editingEmojiModal.value}
+                    onChange={(e) => setEditingEmojiModal({ ...editingEmojiModal, value: e.target.value })}
+                    className="w-full border rounded-xl px-3 py-2 text-center text-xl font-bold focus:ring-2 focus:ring-amber-500"
+                    autoFocus
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-stone-500 font-bold mb-1.5">Quick Choices:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["🐟", "🦐", "🦀", "🌊", "🌴", "🌿", "🏺", "🌶️", "🔥", "🧄", "💛", "⚡", "🛍️", "🛒", "👑", "✨", "⭐", "📦", "✓", "🙏"].map(em => (
+                      <button
+                        key={em}
+                        type="button"
+                        onClick={() => setEditingEmojiModal({ ...editingEmojiModal, value: em })}
+                        className="w-9 h-9 rounded-xl border bg-white hover:bg-stone-100 text-lg flex items-center justify-center transition"
+                      >
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t">
+                  <button onClick={() => setEditingEmojiModal(null)} className="flex-1 py-2 border rounded-xl font-bold text-xs text-stone-600">Cancel</button>
+                  <button
+                    onClick={() => {
+                      setSiteContent(prev => ({ ...prev, [editingEmojiModal.key]: editingEmojiModal.value }));
+                      setEditingEmojiModal(null);
+                    }}
+                    className="flex-1 py-2 bg-amber-600 text-white rounded-xl font-bold text-xs shadow"
+                  >
+                    Save Emoji ✓
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FOOTER */}
+          <footer className="bg-[#051e34] text-sky-200 py-10 mt-auto text-xs border-t border-sky-900">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
+              <h4 className="font-brand font-black text-xl text-white">
+                {renderEditable("footerTitle", "Footer Brand Title", siteContent.footerTitle)}
+              </h4>
+              <p className="text-sky-300">
+                {renderEditable("footerSubtitle", "Footer Subtitle", siteContent.footerSubtitle)}
+              </p>
+              <div className="text-[11px] text-sky-400 max-w-xl mx-auto">
+                {renderEditable("footerNotice", "Footer Quality Notice", siteContent.footerNotice)}
+              </div>
+              <div className="text-[11px] text-sky-400 pt-1">
+                UPI Auto Pay: <code className="text-amber-300">{ownerConfig.upiId}</code> • Free Delivery Above ₹{ownerConfig.freeDeliveryMin}
+              </div>
+              <div className="pt-2 text-sky-500">
+                © {new Date().getFullYear()} {siteContent.storeTitle}. All rights reserved.
+              </div>
+            </div>
+          </footer>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
