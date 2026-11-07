@@ -686,13 +686,34 @@
         alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
       };
 
-      // Helper to parse weight in grams from size/weight string
+      // Helper to parse weight in grams from size/weight string accurately
       const parseWeightGrams = (weightStr, sizeStr) => {
-        const str = `${weightStr || ""} ${sizeStr || ""}`.toLowerCase();
-        const kg = str.match(/([\d.]+)\s*kg/i);
-        if (kg) return Math.round(parseFloat(kg[1]) * 1000);
-        const gm = str.match(/([\d.]+)\s*(g|gm|gms|gram|grams)/i);
-        if (gm) return Math.round(parseFloat(gm[1]));
+        const parseSingle = (s) => {
+          if (!s) return null;
+          const clean = String(s).trim().toLowerCase();
+          // Match grams first: 250g, 250 gm, 250 grams
+          const gm = clean.match(/([\d.]+)\s*(g|gm|gms|gram|grams)\b/i);
+          if (gm) {
+            const val = parseFloat(gm[1]);
+            if (!isNaN(val) && val > 0) return Math.round(val);
+          }
+          // Match kg: 1kg, 1.5 kg, 1 kilo
+          const kg = clean.match(/([\d.]+)\s*(kg|kgs|kilo|kilogram|kilograms)\b/i);
+          if (kg) {
+            const val = parseFloat(kg[1]);
+            if (!isNaN(val) && val > 0) return Math.round(val * 1000);
+          }
+          return null;
+        };
+
+        // Prioritize explicit weightStr if present
+        const fromWeight = parseSingle(weightStr);
+        if (fromWeight !== null) return fromWeight;
+
+        // Fall back to sizeStr
+        const fromSize = parseSingle(sizeStr);
+        if (fromSize !== null) return fromSize;
+
         return 250;
       };
 
@@ -840,10 +861,13 @@
         }
       };
 
-      const openProductDetailPage = (p) => {
+      const openProductDetailPage = (p, variantIdx = null) => {
         setActiveProductDetail(p);
         setQuickViewProduct(p);
-        setDetailVariantIdx(0);
+        const initialIdx = (variantIdx !== null && variantIdx !== undefined)
+          ? variantIdx
+          : ((selectedVariants && selectedVariants[p.id] !== undefined) ? selectedVariants[p.id] : 0);
+        setDetailVariantIdx(initialIdx);
         setDetailQty(1);
         setActiveImageIdx(0);
         setViewMode("product");
@@ -1116,7 +1140,8 @@
         if (product.stock <= 0) return;
         const vIdx = variantIdx !== null ? variantIdx : (selectedVariants[product.id] || 0);
         const variant = product.variants[vIdx] || product.variants[0];
-        const cartItemId = `${product.id}-${variant.size}`;
+        const effectiveSize = variant.weight || variant.size;
+        const cartItemId = `${product.id}-${effectiveSize}`;
         const count = Number(qtyToAdd) > 0 ? Number(qtyToAdd) : 1;
 
         setCart(prev => {
@@ -1129,8 +1154,8 @@
             productId: product.id,
             name: product.name,
             category: product.category,
-            size: variant.size,
-            weight: variant.weight || variant.size,
+            size: effectiveSize,
+            weight: effectiveSize,
             price: variant.price,
             image: product.image,
             quantity: count
@@ -1473,11 +1498,16 @@
         setProducts(prev => prev.map(p => {
           if (p.id === activeProductDetail.id) {
             const newVariants = [...p.variants];
+            const oldV = newVariants[variantIdx] || {};
+            const cleanWeight = (weight !== undefined && weight !== null && String(weight).trim() !== "")
+              ? String(weight).trim()
+              : (oldV.weight || oldV.size);
             newVariants[variantIdx] = {
-              ...newVariants[variantIdx],
+              ...oldV,
               price: Number(price),
-              originalPrice: originalPrice ? Number(originalPrice) : newVariants[variantIdx].originalPrice,
-              weight: weight || newVariants[variantIdx].weight
+              originalPrice: originalPrice ? Number(originalPrice) : oldV.originalPrice,
+              weight: cleanWeight,
+              size: cleanWeight
             };
             const updated = { ...p, variants: newVariants };
             setActiveProductDetail(updated);
@@ -3018,7 +3048,7 @@
               {viewMode === "product" && activeProductDetail ? (
                 // ================= DEDICATED SEPARATE PRODUCT PAGE WITH MULTI-IMAGE GALLERY & DELHIVERY PINCODE RATES =================
                 (() => {
-                  const p = activeProductDetail;
+                  const p = (activeProductDetail && products.find(item => item.id === activeProductDetail.id)) || activeProductDetail;
                   const currentVariant = p.variants[detailVariantIdx] || p.variants[0];
                   const hasDiscount = currentVariant && currentVariant.originalPrice && currentVariant.originalPrice > currentVariant.price;
                   const discountPct = hasDiscount ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100) : 0;
@@ -3475,8 +3505,8 @@
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        const wName = prompt("Edit weight label for this pack:", currentVariant.weight);
-                                        const wRate = prompt("Edit price (â‚¹) for this pack:", currentVariant.price);
+                                        const wName = prompt("Edit weight label for this pack:", currentVariant.weight || currentVariant.size);
+                                        const wRate = prompt("Edit price in Rupees (₹) for this pack:", currentVariant.price);
                                         if (wName && wRate) {
                                           updateActiveProductVariant(detailVariantIdx, wRate, null, wName);
                                         }
@@ -3491,7 +3521,10 @@
                                   {p.variants.map((v, idx) => (
                                     <button
                                       key={idx}
-                                      onClick={() => setDetailVariantIdx(idx)}
+                                      onClick={() => {
+                                        setDetailVariantIdx(idx);
+                                        setSelectedVariants(prev => ({ ...prev, [p.id]: idx }));
+                                      }}
                                       className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
                                         detailVariantIdx === idx
                                           ? "bg-stone-900 text-amber-300 border-stone-900 shadow-sm"
@@ -3510,9 +3543,6 @@
                                     <span className="bg-white border px-2 py-0.5 rounded-md font-bold text-sky-900">
                                       {currentVariant.weight || currentVariant.size}
                                     </span>
-                                    {currentVariant.weight && currentVariant.weight !== currentVariant.size && (
-                                      <span className="text-[11px] text-stone-500">({currentVariant.size})</span>
-                                    )}
                                   </div>
                                   <div className="text-stone-500 font-medium">
                                     Total Parcel Weight: <strong className="text-stone-900">{displayWeightStr}</strong>
@@ -4346,7 +4376,7 @@
 
                     return (
                       <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
-                        <div className="relative h-64 overflow-hidden bg-stone-100 cursor-pointer" onClick={() => openProductDetail(product)}>
+                        <div className="relative h-64 overflow-hidden bg-stone-100 cursor-pointer" onClick={() => openProductDetail(product, currentVIdx)}>
                           <img
                             src={product.image}
                             alt={product.name}
@@ -4408,12 +4438,14 @@
                                   if (n && n.trim()) {
                                     setProducts(prev => prev.map(p => p.id === product.id ? { ...p, name: n.trim() } : p));
                                   }
+                                } else {
+                                  openProductDetail(product, currentVIdx);
                                 }
                               }}
-                              className={`font-brand font-bold text-lg text-stone-900 mt-0.5 line-clamp-1 ${
-                                isOwner && isLiveEditActive ? "cursor-pointer border-2 border-dashed border-amber-400 bg-amber-100/50 rounded px-1 -mx-1" : ""
+                              className={`font-brand font-bold text-lg text-stone-900 mt-0.5 line-clamp-1 cursor-pointer hover:text-sky-900 ${
+                                isOwner && isLiveEditActive ? "border-2 border-dashed border-amber-400 bg-amber-100/50 rounded px-1 -mx-1" : ""
                               }`}
-                              title={isOwner && isLiveEditActive ? "Click to edit product title" : ""}
+                              title={isOwner && isLiveEditActive ? "Click to edit product title" : "Click to view product details"}
                             >
                               {product.name} {isOwner && isLiveEditActive && <span className="text-xs">✏️</span>}
                             </h4>
@@ -4441,7 +4473,7 @@
                             <div className="grid grid-cols-2 gap-1.5">
                               {product.variants.map((v, idx) => (
                                 <button
-                                  key={v.size}
+                                  key={idx}
                                   onClick={() => setSelectedVariants(prev => ({ ...prev, [product.id]: idx }))}
                                   className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition truncate ${
                                     currentVIdx === idx ? "border-sky-700 bg-sky-50 text-sky-900 font-bold ring-1 ring-sky-700" : "border-stone-200 text-stone-700"
@@ -5254,15 +5286,18 @@
                           {quickViewProduct.variants.map((v, idx) => (
                             <button
                               key={idx}
-                              onClick={() => setDetailVariantIdx(idx)}
+                              onClick={() => {
+                                setDetailVariantIdx(idx);
+                                setSelectedVariants(prev => ({ ...prev, [quickViewProduct.id]: idx }));
+                              }}
                               className={`py-2.5 px-3 rounded-xl border text-left transition ${
                                 detailVariantIdx === idx
                                   ? "border-sky-800 bg-sky-50 ring-2 ring-sky-700 font-bold text-sky-950"
                                   : "border-stone-200 bg-white text-stone-700 hover:bg-stone-50"
                               }`}
                             >
-                              <div className="text-xs font-black">{v.size}</div>
-                              <div className="text-[11px] text-stone-500">â‚¹{v.price} {v.originalPrice && <span className="line-through">â‚¹{v.originalPrice}</span>}</div>
+                              <div className="text-xs font-black">{v.weight || v.size}</div>
+                              <div className="text-[11px] text-stone-500">₹{v.price} {v.originalPrice && <span className="line-through">₹{v.originalPrice}</span>}</div>
                             </button>
                           ))}
                         </div>
