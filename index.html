@@ -686,6 +686,16 @@
         alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
       };
 
+      // Helper to parse weight in grams from size/weight string
+      const parseWeightGrams = (weightStr, sizeStr) => {
+        const str = `${weightStr || ""} ${sizeStr || ""}`.toLowerCase();
+        const kg = str.match(/([\d.]+)\s*kg/i);
+        if (kg) return Math.round(parseFloat(kg[1]) * 1000);
+        const gm = str.match(/([\d.]+)\s*(g|gm|gms|gram|grams)/i);
+        if (gm) return Math.round(parseFloat(gm[1]));
+        return 250;
+      };
+
       // Pincode & Delhivery Courier Delivery Rate Calculator from Murud-Janjira (Raigad 402401)
       const [pincodeInput, setPincodeInput] = useState("400001");
       const [pincodeResult, setPincodeResult] = useState({
@@ -694,6 +704,8 @@
         state: "Maharashtra",
         distanceKm: 120,
         rate: 60,
+        baseRate: 60,
+        slabAddon: 25,
         days: "1-2 business days",
         courier: "Delhivery Direct Surface Express"
       });
@@ -720,6 +732,8 @@
             state: "Maharashtra",
             distanceKm: pin === "402401" ? 5 : 35,
             rate: z1Rate,
+            baseRate: z1Rate,
+            slabAddon: 20,
             days: "1-2 days (Next Day Delivery)",
             courier: "Delhivery Local Coastal Surface"
           };
@@ -734,6 +748,8 @@
             state: "Maharashtra",
             distanceKm: isPune ? 145 : 120,
             rate: z2Rate,
+            baseRate: z2Rate,
+            slabAddon: 25,
             days: "1-2 business days",
             courier: "Delhivery Direct Surface Express"
           };
@@ -747,6 +763,8 @@
             state: prefix3 === "403" ? "Goa" : "Maharashtra",
             distanceKm: 340,
             rate: z3Rate,
+            baseRate: z3Rate,
+            slabAddon: 30,
             days: "2-3 business days",
             courier: "Delhivery Express Surface Parcel"
           };
@@ -760,6 +778,8 @@
             state: ["38", "39"].includes(prefix2) ? "Gujarat" : (["56", "57", "58", "59"].includes(prefix2) ? "Karnataka" : "South India"),
             distanceKm: 780,
             rate: z4Rate,
+            baseRate: z4Rate,
+            slabAddon: 40,
             days: "3-4 business days",
             courier: "Delhivery Air / Surface Express"
           };
@@ -773,6 +793,8 @@
             state: prefix2 === "11" ? "Delhi" : "National Express",
             distanceKm: 1350,
             rate: z5Rate,
+            baseRate: z5Rate,
+            slabAddon: 50,
             days: "3-5 business days",
             courier: "Delhivery Air Priority Express"
           };
@@ -785,6 +807,8 @@
           state: "India",
           distanceKm: 1850,
           rate: z6Rate,
+          baseRate: z6Rate,
+          slabAddon: 60,
           days: "4-7 business days",
           courier: "Delhivery Air Express Parcel"
         };
@@ -1071,23 +1095,34 @@
 
       // Cart calculations
       const cartSubtotal = useMemo(() => cart.reduce((s, i) => s + i.price * i.quantity, 0), [cart]);
+      const cartTotalWeightGrams = useMemo(() => {
+        return cart.reduce((tot, i) => tot + parseWeightGrams(i.weight, i.size) * i.quantity, 0);
+      }, [cart]);
       const isFreeDelivery = cartSubtotal >= ownerConfig.freeDeliveryMin;
-      const baseShippingFee = pincodeResult ? pincodeResult.rate : ownerConfig.shippingFee;
+      const baseShippingFee = useMemo(() => {
+        if (!pincodeResult) return ownerConfig.shippingFee || 50;
+        const base = pincodeResult.baseRate || pincodeResult.rate || 60;
+        const slab = pincodeResult.slabAddon || 25;
+        const totalW = cartTotalWeightGrams > 0 ? cartTotalWeightGrams : 250;
+        const extraSlabs = Math.max(0, Math.ceil((totalW - 500) / 500));
+        return base + (extraSlabs * slab);
+      }, [pincodeResult, cartTotalWeightGrams, ownerConfig.shippingFee]);
       const shippingCharge = cartSubtotal > 0 ? (isFreeDelivery ? 0 : baseShippingFee) : 0;
       const cartTotal = cartSubtotal + shippingCharge;
       const totalItemsCount = cart.reduce((c, i) => c + i.quantity, 0);
 
       // Cart helpers
-      const addToCart = (product, variantIdx = null) => {
+      const addToCart = (product, variantIdx = null, qtyToAdd = 1) => {
         if (product.stock <= 0) return;
         const vIdx = variantIdx !== null ? variantIdx : (selectedVariants[product.id] || 0);
         const variant = product.variants[vIdx] || product.variants[0];
         const cartItemId = `${product.id}-${variant.size}`;
+        const count = Number(qtyToAdd) > 0 ? Number(qtyToAdd) : 1;
 
         setCart(prev => {
           const existing = prev.find(i => i.id === cartItemId);
           if (existing) {
-            return prev.map(i => i.id === cartItemId ? { ...i, quantity: i.quantity + 1 } : i);
+            return prev.map(i => i.id === cartItemId ? { ...i, quantity: i.quantity + count } : i);
           }
           return [...prev, {
             id: cartItemId,
@@ -1095,9 +1130,10 @@
             name: product.name,
             category: product.category,
             size: variant.size,
+            weight: variant.weight || variant.size,
             price: variant.price,
             image: product.image,
-            quantity: 1
+            quantity: count
           }];
         });
         setIsCartOpen(true);
@@ -2955,6 +2991,26 @@
                   const savings = hasDiscount ? (currentVariant.originalPrice - currentVariant.price) : 0;
                   const relatedProducts = products.filter(item => item.id !== p.id).slice(0, 4);
 
+                  // Accurate parcel weight and item subtotal
+                  const currentWeightGrams = parseWeightGrams(currentVariant.weight, currentVariant.size);
+                  const totalSelectedWeightGrams = currentWeightGrams * detailQty;
+                  const displayWeightStr = totalSelectedWeightGrams >= 1000 
+                    ? `${(totalSelectedWeightGrams / 1000).toFixed(1).replace(/\.0$/, "")} kg` 
+                    : `${totalSelectedWeightGrams}g`;
+
+                  const currentItemSubtotal = (currentVariant?.price || 0) * detailQty;
+                  const isCurrentItemFreeDelivery = currentItemSubtotal >= (ownerConfig.freeDeliveryMin || 999);
+
+                  // Dynamic Delhivery delivery charge as per weight & distance from Murud-Janjira
+                  const currentDelhiveryCharge = (() => {
+                    if (!pincodeResult) return ownerConfig.shippingFee || 50;
+                    if (isCurrentItemFreeDelivery) return 0;
+                    const base = pincodeResult.baseRate || pincodeResult.rate || 60;
+                    const slab = pincodeResult.slabAddon || 25;
+                    const extraSlabs = Math.max(0, Math.ceil((totalSelectedWeightGrams - 500) / 500));
+                    return base + (extraSlabs * slab);
+                  })();
+
                   // Multi-image list for product: uses p.images array or defaults to [p.image]
                   const productImages = (p.images && p.images.length > 0) ? p.images : [p.image];
                   const currentDisplayImage = productImages[activeImageIdx] || p.image;
@@ -3198,33 +3254,54 @@
                               <div
                                 onClick={() => {
                                   if (isEditor) {
-                                    const o = prompt("Edit Coastal Origin Trust Note:", p.origin || "Direct Sea Catch");
-                                    if (o) updateActiveProductField("origin", o.trim());
+                                    const o = prompt("Edit Coastal Origin Note:", p.origin || "Direct Sea Catch");
+                                    if (o !== null) updateActiveProductField("origin", o.trim());
+                                    const os = prompt("Edit Subtitle for Origin:", p.originSub || "Cleaned & sun-cured");
+                                    if (os !== null) updateActiveProductField("originSub", os.trim());
                                   }
                                 }}
                                 className={`bg-sky-50/80 border border-sky-100 p-3 rounded-2xl ${isEditor ? "cursor-pointer hover:border-sky-300" : ""}`}
+                                title={isEditor ? "Click to edit Origin badge" : ""}
                               >
                                 <div className="text-xl">&#127754;</div>
-                                <div className="text-[11px] font-bold text-sky-950 mt-1">Direct Sea Catch</div>
-                                <div className="text-[10px] text-sky-700">Cleaned &amp; sun-cured</div>
+                                <div className="text-[11px] font-bold text-sky-950 mt-1">{p.origin || "Direct Sea Catch"}</div>
+                                <div className="text-[10px] text-sky-700">{p.originSub || "Cleaned & sun-cured"}</div>
                               </div>
                               <div
                                 onClick={() => {
                                   if (isEditor) {
                                     const prep = prompt("Edit Recipe Note:", p.preparation || "Authentic CKP Recipe");
-                                    if (prep) updateActiveProductField("preparation", prep.trim());
+                                    if (prep !== null) updateActiveProductField("preparation", prep.trim());
+                                    const preps = prompt("Edit Subtitle for Recipe:", p.prepSub || "Generations-old craft");
+                                    if (preps !== null) updateActiveProductField("prepSub", preps.trim());
                                   }
                                 }}
                                 className={`bg-amber-50/80 border border-amber-100 p-3 rounded-2xl ${isEditor ? "cursor-pointer hover:border-amber-300" : ""}`}
+                                title={isEditor ? "Click to edit Recipe badge" : ""}
                               >
                                 <div className="text-xl">&#127994;</div>
-                                <div className="text-[11px] font-bold text-amber-950 mt-1">Authentic CKP Recipe</div>
-                                <div className="text-[10px] text-amber-700">Generations-old craft</div>
+                                <div className="text-[11px] font-bold text-amber-950 mt-1">{p.preparation || "Authentic CKP Recipe"}</div>
+                                <div className="text-[10px] text-amber-700">{p.prepSub || "Generations-old craft"}</div>
                               </div>
-                              <div className="bg-emerald-50/80 border border-emerald-100 p-3 rounded-2xl">
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const pt = prompt("Edit Purity Heading (e.g. 100% Pure):", p.purityHeading || "100% Pure");
+                                    if (pt !== null) updateActiveProductField("purityHeading", pt.trim());
+                                    const ps = prompt("Edit Purity Subtitle (e.g. Zero preservatives):", p.puritySubtitle || "Zero preservatives");
+                                    if (ps !== null) updateActiveProductField("puritySubtitle", ps.trim());
+                                  }
+                                }}
+                                className={`bg-emerald-50/80 border border-emerald-100 p-3 rounded-2xl ${isEditor ? "cursor-pointer hover:border-emerald-300 ring-1 ring-amber-400" : ""}`}
+                                title={isEditor ? "Click to edit 100% Pure badge" : ""}
+                              >
                                 <div className="text-xl">&#127807;</div>
-                                <div className="text-[11px] font-bold text-emerald-950 mt-1">100% Pure</div>
-                                <div className="text-[10px] text-emerald-700">Zero preservatives</div>
+                                <div className="text-[11px] font-bold text-emerald-950 mt-1">
+                                  {p.purityHeading || "100% Pure"} {isEditor && <span className="text-[10px]">✏️</span>}
+                                </div>
+                                <div className="text-[10px] text-emerald-700">
+                                  {p.puritySubtitle || "Zero preservatives"}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -3388,10 +3465,25 @@
                                           : "bg-white text-stone-700 border-stone-300 hover:border-stone-500"
                                       }`}
                                     >
-                                      <span>{v.weight}</span>
+                                      <span>{v.weight || v.size}</span>
                                       <span className="text-[11px] opacity-80">&#8377;{v.price}</span>
                                     </button>
                                   ))}
+                                </div>
+
+                                <div className="mt-2.5 bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs flex flex-wrap items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 text-stone-700">
+                                    <span className="font-bold text-stone-900">Pack Weight:</span>
+                                    <span className="bg-white border px-2 py-0.5 rounded-md font-bold text-sky-900">
+                                      {currentVariant.weight || currentVariant.size}
+                                    </span>
+                                    {currentVariant.weight && currentVariant.weight !== currentVariant.size && (
+                                      <span className="text-[11px] text-stone-500">({currentVariant.size})</span>
+                                    )}
+                                  </div>
+                                  <div className="text-stone-500 font-medium">
+                                    Total Parcel Weight: <strong className="text-stone-900">{displayWeightStr}</strong>
+                                  </div>
                                 </div>
                               </div>
 
@@ -3521,21 +3613,41 @@
 
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                       <div>
-                                        <div className="text-[11px] text-stone-500 font-medium">{pincodeResult.courier}</div>
-                                        <div className="text-sm font-black text-stone-900 flex items-center gap-2">
-                                          <span>Delivery Charge: &#8377;{pincodeResult.rate}</span>
-                                          {isFreeDelivery && (
-                                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                              FREE Delivery on this Order!
-                                            </span>
+                                        <div className="text-[11px] text-stone-500 font-medium">
+                                          {pincodeResult.courier} • Parcel: <strong className="text-stone-800">{displayWeightStr}</strong>
+                                        </div>
+                                        <div className="text-sm font-black text-stone-900 flex flex-wrap items-center gap-2">
+                                          {isCurrentItemFreeDelivery ? (
+                                            <>
+                                              <span className="line-through text-stone-400 font-normal text-xs">&#8377;{pincodeResult.baseRate || pincodeResult.rate}</span>
+                                              <span className="text-emerald-700">&#8377;0 FREE Delivery!</span>
+                                              <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                                Order above &#8377;{ownerConfig.freeDeliveryMin}
+                                              </span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span>Delivery: &#8377;{currentDelhiveryCharge}</span>
+                                              <span className="text-[11px] font-normal text-stone-500">
+                                                (for {displayWeightStr} parcel)
+                                              </span>
+                                            </>
                                           )}
                                         </div>
+                                        {!isCurrentItemFreeDelivery && ownerConfig.freeDeliveryMin > currentItemSubtotal && (
+                                          <div className="text-[10px] text-sky-800 font-semibold pt-0.5">
+                                            💡 Add &#8377;{ownerConfig.freeDeliveryMin - currentItemSubtotal} more for 100% FREE Delivery!
+                                          </div>
+                                        )}
                                       </div>
 
                                       <div className="text-right">
                                         <div className="text-[11px] text-stone-500 font-medium">Estimated Delivery:</div>
                                         <div className="font-bold text-emerald-700 text-xs">
                                           {pincodeResult.days}
+                                        </div>
+                                        <div className="text-[10px] text-stone-500">
+                                          From Murud-Janjira
                                         </div>
                                       </div>
                                     </div>
@@ -3554,6 +3666,24 @@
                                 )}
                               </div>
 
+                            </div>
+
+                            {/* Live Order Summary Breakdown */}
+                            <div className="bg-stone-100/80 border border-stone-200 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+                              <div>
+                                <div className="text-stone-500 font-medium">
+                                  Package: {detailQty} × {currentVariant.weight || currentVariant.size} ({displayWeightStr})
+                                </div>
+                                <div className="text-stone-900 font-bold">
+                                  Subtotal: &#8377;{currentItemSubtotal} {isCurrentItemFreeDelivery ? "+ Free Shipping" : `+ &#8377;${currentDelhiveryCharge} Delivery`}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[11px] text-stone-500 font-medium">Estimated Total:</div>
+                                <div className="text-lg font-black text-stone-900">
+                                  &#8377;{currentItemSubtotal + (isCurrentItemFreeDelivery ? 0 : currentDelhiveryCharge)}
+                                </div>
+                              </div>
                             </div>
 
                             {/* Action Buttons */}
@@ -4268,7 +4398,7 @@
                                     currentVIdx === idx ? "border-sky-700 bg-sky-50 text-sky-900 font-bold ring-1 ring-sky-700" : "border-stone-200 text-stone-700"
                                   }`}
                                 >
-                                  {v.size}
+                                  {v.weight || v.size}
                                 </button>
                               ))}
                             </div>
