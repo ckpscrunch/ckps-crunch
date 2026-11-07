@@ -489,7 +489,11 @@
       picklesCardTitle: "Barni Pickles",
       picklesCardTagline: "21-Day Sun-Matured Mango & Stuffed Mirch",
 
-      // 6. Product Catalog Grid
+      // 6. Product Catalog Grid & Bestsellers
+      topSellersBadge: "🔥 High-Demand Bestsellers",
+      topSellersTitle: "🔥 Top Selling Items",
+      topSellersSubtitle: "Our most loved, fast-selling coastal delicacies ordered by thousands of seafood lovers across India",
+      tabTopSellers: "Top Selling Items",
       catalogTitle: "Konkan Coastal Offerings",
       catalogSubtitle: "Direct Konkan coastal quality packed fresh to order. Dispatched in 24 hours.",
       searchPlaceholder: "Search Bombil, Kolambi, Masala...",
@@ -546,14 +550,27 @@
       const [ownerConfig, setOwnerConfig] = useState(() => {
         try {
           const s = localStorage.getItem("ckp_owner_config_v6");
-          return s ? JSON.parse(s) : {
+          const defConfig = {
             id: "Tejas1999",
             password: "Yash2006",
             upiId: "masterpradhan1231@upi",
             storeName: "CKP's Crunch",
-            freeDeliveryMin: 499,
-            shippingFee: 50
+            freeDeliveryMin: 999999,
+            shippingFee: 95,
+            zone1Fee: 75,
+            zone1Slab: 35,
+            zone2Fee: 95,
+            zone2Slab: 45,
+            zone3Fee: 125,
+            zone3Slab: 55,
+            zone4Fee: 160,
+            zone4Slab: 65,
+            zone5Fee: 195,
+            zone5Slab: 75,
+            zone6Fee: 240,
+            zone6Slab: 90
           };
+          return s ? { ...defConfig, ...JSON.parse(s) } : defConfig;
         } catch(e) {
           return {
             id: "Tejas1999",
@@ -641,6 +658,7 @@
       // Track & Cancel Order Customer State
       const [showTrackOrderModal, setShowTrackOrderModal] = useState(false);
       const [trackSearchInput, setTrackSearchInput] = useState("");
+      const [showDeliveryRateModal, setShowDeliveryRateModal] = useState(false);
       const [trackedOrder, setTrackedOrder] = useState(null);
       const [orderFilterTab, setOrderFilterTab] = useState("all"); // 'all', 'active', 'cancelled'
 
@@ -724,9 +742,9 @@
         district: "Mumbai",
         state: "Maharashtra",
         distanceKm: 120,
-        rate: 60,
-        baseRate: 60,
-        slabAddon: 25,
+        rate: 95,
+        baseRate: 95,
+        slabAddon: 45,
         days: "1-2 business days",
         courier: "Delhivery Direct Surface Express"
       });
@@ -737,13 +755,20 @@
         const prefix2 = pin.substring(0, 2);
         const prefix3 = pin.substring(0, 3);
 
-        // Dynamic rates customized by store owner
-        const z1Rate = ownerConfig.zone1Fee || 40;
-        const z2Rate = ownerConfig.zone2Fee || 60;
-        const z3Rate = ownerConfig.zone3Fee || 80;
-        const z4Rate = ownerConfig.zone4Fee || 110;
-        const z5Rate = ownerConfig.zone5Fee || (z4Rate + 20);
-        const z6Rate = ownerConfig.zone6Fee || (z4Rate + 50);
+        // Realistic Delhivery Surface & Air commercial courier rates (customizable by store owner)
+        const z1Rate = ownerConfig.zone1Fee || 75;
+        const z2Rate = ownerConfig.zone2Fee || 95;
+        const z3Rate = ownerConfig.zone3Fee || 125;
+        const z4Rate = ownerConfig.zone4Fee || 160;
+        const z5Rate = ownerConfig.zone5Fee || 195;
+        const z6Rate = ownerConfig.zone6Fee || 240;
+
+        const z1Slab = ownerConfig.zone1Slab || 35;
+        const z2Slab = ownerConfig.zone2Slab || 45;
+        const z3Slab = ownerConfig.zone3Slab || 55;
+        const z4Slab = ownerConfig.zone4Slab || 65;
+        const z5Slab = ownerConfig.zone5Slab || 75;
+        const z6Slab = ownerConfig.zone6Slab || 90;
 
         // Zone 1: Local Murud-Janjira & Raigad Coastline (402xxx)
         if (prefix3 === "402") {
@@ -754,7 +779,7 @@
             distanceKm: pin === "402401" ? 5 : 35,
             rate: z1Rate,
             baseRate: z1Rate,
-            slabAddon: 20,
+            slabAddon: z1Slab,
             days: "1-2 days (Next Day Delivery)",
             courier: "Delhivery Local Coastal Surface"
           };
@@ -770,7 +795,7 @@
             distanceKm: isPune ? 145 : 120,
             rate: z2Rate,
             baseRate: z2Rate,
-            slabAddon: 25,
+            slabAddon: z2Slab,
             days: "1-2 business days",
             courier: "Delhivery Direct Surface Express"
           };
@@ -785,7 +810,7 @@
             distanceKm: 340,
             rate: z3Rate,
             baseRate: z3Rate,
-            slabAddon: 30,
+            slabAddon: z3Slab,
             days: "2-3 business days",
             courier: "Delhivery Express Surface Parcel"
           };
@@ -800,7 +825,7 @@
             distanceKm: 780,
             rate: z4Rate,
             baseRate: z4Rate,
-            slabAddon: 40,
+            slabAddon: z4Slab,
             days: "3-4 business days",
             courier: "Delhivery Air / Surface Express"
           };
@@ -815,7 +840,7 @@
             distanceKm: 1350,
             rate: z5Rate,
             baseRate: z5Rate,
-            slabAddon: 50,
+            slabAddon: z5Slab,
             days: "3-5 business days",
             courier: "Delhivery Air Priority Express"
           };
@@ -829,7 +854,7 @@
           distanceKm: 1850,
           rate: z6Rate,
           baseRate: z6Rate,
-          slabAddon: 60,
+          slabAddon: z6Slab,
           days: "4-7 business days",
           courier: "Delhivery Air Express Parcel"
         };
@@ -1688,13 +1713,15 @@
 
                   <button
                     onClick={() => {
-                      setIsOwnerPortalView(!isOwnerPortalView);
-                      setIsLiveEditActive(false);
+                      const nextPortal = !isOwnerPortalView;
+                      setIsOwnerPortalView(nextPortal);
+                      // If switching to storefront, automatically enable live edit mode so owner can edit text easily!
+                      if (!nextPortal) setIsLiveEditActive(true);
                       if (viewMode === "product") setViewMode("store");
                     }}
                     className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-3 py-1 rounded-lg text-xs shadow transition"
                   >
-                    {isOwnerPortalView ? "🛒 View Storefront" : "⚙️ Open Owner Portal"}
+                    {isOwnerPortalView ? "🛒 View Storefront & Live Edit" : "⚙️ Open Owner Portal"}
                   </button>
 
                   <button
@@ -3614,23 +3641,12 @@
                                     {isEditor && (
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          const newFee = prompt("Enter new Standard Shipping Fee in Rupees (â‚¹):", ownerConfig.shippingFee);
-                                          if (newFee !== null && !isNaN(Number(newFee))) {
-                                            const newMin = prompt("Enter Free Delivery Minimum Order Amount (â‚¹):", ownerConfig.freeDeliveryMin);
-                                            setOwnerConfig(prev => ({
-                                              ...prev,
-                                              shippingFee: Number(newFee),
-                                              freeDeliveryMin: Number(newMin || prev.freeDeliveryMin)
-                                            }));
-                                            setHasUnpublishedChanges(true);
-                                            alert(`Delivery price updated to â‚¹${newFee} (Free above â‚¹${newMin || ownerConfig.freeDeliveryMin})`);
-                                          }
-                                        }}
-                                        className="text-[10px] font-bold text-sky-900 bg-sky-200/80 hover:bg-sky-300 px-2 py-0.5 rounded-lg transition"
-                                        title="Owner: Click to change delivery rates"
+                                        onClick={() => setShowDeliveryRateModal(true)}
+                                        className="text-[10px] font-bold text-sky-900 bg-sky-200/90 hover:bg-sky-300 px-2.5 py-1 rounded-lg transition shadow-xs flex items-center gap-1"
+                                        title="Owner: Click to adjust Delhivery shipping rates"
                                       >
-                                        &#9998; Change Delivery Rates
+                                        <span>&#9998;</span>
+                                        <span>Edit Delhivery Rates</span>
                                       </button>
                                     )}
                                   </div>
@@ -4297,16 +4313,80 @@
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div>
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-black uppercase tracking-wider mb-1.5 shadow-sm">
-                        <span>{activeSection === "Top Sellers" ? "ðŸ”¥ High-Demand Bestsellers" : `ðŸŒŠ ${activeSection}`}</span>
-                      </div>
-                      <h3 className="font-brand text-2xl sm:text-3xl font-black text-stone-900">
-                        {activeSection === "Top Sellers" ? "ðŸ”¥ Top Selling Items" : (activeSection === "All" ? renderEditable("catalogTitle", "Catalog Title", siteContent.catalogTitle) : `${activeSection} Menu`)}
-                      </h3>
-                      <p className="text-xs text-stone-500 mt-0.5 font-medium">
                         {activeSection === "Top Sellers" 
-                          ? "Our most loved, fast-selling coastal delicacies ordered by thousands of seafood lovers across India" 
-                          : renderEditable("catalogSubtitle", "Catalog Subheading", siteContent.catalogSubtitle)}
-                      </p>
+                          ? renderEditable("topSellersBadge", "Top Sellers Badge", siteContent.topSellersBadge || "ðŸ”¥ High-Demand Bestsellers") 
+                          : <span>ðŸŒŠ {activeSection}</span>}
+                        {isEditor && activeSection === "Top Sellers" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const b = prompt("Edit Badge Text:", siteContent.topSellersBadge || "ðŸ”¥ High-Demand Bestsellers");
+                              if (b !== null) { setSiteContent(prev => ({ ...prev, topSellersBadge: b.trim() })); setHasUnpublishedChanges(true); }
+                            }}
+                            className="text-[10px] bg-amber-200/90 hover:bg-amber-300 text-amber-900 px-1.5 py-0.5 rounded font-bold"
+                            title="Quick Edit Badge"
+                          >
+                            âœï¸
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-brand text-2xl sm:text-3xl font-black text-stone-900">
+                          {activeSection === "Top Sellers" 
+                            ? renderEditable("topSellersTitle", "Catalog Title", siteContent.topSellersTitle || "ðŸ”¥ Top Selling Items", "span") 
+                            : (activeSection === "All" 
+                                ? renderEditable("catalogTitle", "Catalog Title", siteContent.catalogTitle || "Konkan Coastal Offerings", "span") 
+                                : `${activeSection} Menu`)}
+                        </h3>
+                        {isEditor && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cur = activeSection === "Top Sellers" ? (siteContent.topSellersTitle || "ðŸ”¥ Top Selling Items") : (siteContent.catalogTitle || "Konkan Coastal Offerings");
+                              const t = prompt("Edit Section Heading:", cur);
+                              if (t !== null) {
+                                const key = activeSection === "Top Sellers" ? "topSellersTitle" : "catalogTitle";
+                                setSiteContent(prev => ({ ...prev, [key]: t.trim() }));
+                                setHasUnpublishedChanges(true);
+                              }
+                            }}
+                            className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 px-2 py-1 rounded-lg font-bold transition flex items-center gap-1 shadow-xs"
+                            title="Owner: Quick Edit Heading"
+                          >
+                            <span>âœï¸</span>
+                            <span className="hidden sm:inline">Edit Heading</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-xs text-stone-500 font-medium">
+                          {activeSection === "Top Sellers" 
+                            ? renderEditable("topSellersSubtitle", "Catalog Subheading", siteContent.topSellersSubtitle || "Our most loved, fast-selling coastal delicacies ordered by thousands of seafood lovers across India") 
+                            : renderEditable("catalogSubtitle", "Catalog Subheading", siteContent.catalogSubtitle || "Direct Konkan coastal quality packed fresh to order. Dispatched in 24 hours.")}
+                        </p>
+                        {isEditor && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const cur = activeSection === "Top Sellers" 
+                                ? (siteContent.topSellersSubtitle || "Our most loved, fast-selling coastal delicacies ordered by thousands of seafood lovers across India") 
+                                : (siteContent.catalogSubtitle || "Direct Konkan coastal quality packed fresh to order. Dispatched in 24 hours.");
+                              const s = prompt("Edit Section Subtitle:", cur);
+                              if (s !== null) {
+                                const key = activeSection === "Top Sellers" ? "topSellersSubtitle" : "catalogSubtitle";
+                                setSiteContent(prev => ({ ...prev, [key]: s.trim() }));
+                                setHasUnpublishedChanges(true);
+                              }
+                            }}
+                            className="text-[10px] text-amber-800 hover:text-amber-950 font-bold underline"
+                            title="Owner: Quick Edit Subtitle"
+                          >
+                            âœï¸ Edit
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Search Bar */}
@@ -4330,7 +4410,7 @@
                         activeSection === "Top Sellers" ? "bg-amber-500 text-white shadow-md scale-105" : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
                       }`}
                     >
-                      <span>ðŸ”¥ Top Selling Items</span>
+                      <span>ðŸ”¥ {renderEditable("tabTopSellers", "Top Sellers Tab", siteContent.tabTopSellers || "Top Selling Items")}</span>
                     </button>
                     <button
                       onClick={() => setActiveSection("Dry Fish")}
@@ -4338,7 +4418,7 @@
                         activeSection === "Dry Fish" ? "bg-sky-800 text-white shadow-md scale-105" : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
                       }`}
                     >
-                      <span>ðŸŸ Sun-Dried Fish</span>
+                      <span>ðŸŸ {renderEditable("navDryFishText", "Dry Fish Tab", siteContent.navDryFishText || "Sun-Dried Fish")}</span>
                     </button>
                     <button
                       onClick={() => setActiveSection("Spices")}
@@ -4346,7 +4426,7 @@
                         activeSection === "Spices" ? "bg-amber-700 text-white shadow-md scale-105" : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
                       }`}
                     >
-                      <span>ðŸŒ¿ Coastal Spices</span>
+                      <span>ðŸŒ¿ {renderEditable("navSpicesText", "Spices Tab", siteContent.navSpicesText || "Coastal Spices")}</span>
                     </button>
                     <button
                       onClick={() => setActiveSection("Pickles")}
@@ -4354,7 +4434,7 @@
                         activeSection === "Pickles" ? "bg-red-800 text-white shadow-md scale-105" : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
                       }`}
                     >
-                      <span>ðŸº Barni Pickles</span>
+                      <span>ðŸº {renderEditable("navPicklesText", "Pickles Tab", siteContent.navPicklesText || "Barni Pickles")}</span>
                     </button>
                     <button
                       onClick={() => setActiveSection("All")}
@@ -4362,11 +4442,11 @@
                         activeSection === "All" ? "bg-stone-900 text-white shadow-md scale-105" : "bg-white text-stone-700 border border-stone-200 hover:bg-stone-50"
                       }`}
                     >
-                      <span>âœ¨ View All ({products.length})</span>
+                      <span>âœ¨ {renderEditable("navAllText", "All Tab", siteContent.navAllText || "View All")} ({products.length})</span>
                     </button>
                   </div>
                 </div>
-
+                
                 {/* Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredProducts.map(product => {
@@ -4510,6 +4590,249 @@
                 </>
               )}
             </>
+          )}
+
+                    {/* ================= OWNER DELHIVERY COURIER RATE MANAGER MODAL ================= */}
+          {showDeliveryRateModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-stone-200">
+                <div className="p-5 bg-gradient-to-r from-sky-900 to-amber-900 text-white flex justify-between items-center">
+                  <div>
+                    <h3 className="font-brand font-black text-xl flex items-center gap-2">
+                      <span>ðŸ“¦</span>
+                      <span>Delhivery Courier Rates Manager</span>
+                    </h3>
+                    <p className="text-xs text-sky-200">Set accurate delivery charges based on destination & weight from Murud-Janjira (402401)</p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeliveryRateModal(false)}
+                    className="text-white hover:text-amber-300 font-bold text-lg bg-white/10 w-8 h-8 rounded-full flex items-center justify-center transition"
+                  >
+                    âœ•
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-amber-900 text-[11px] font-semibold">
+                    ðŸ’¡ All rates are calculated accurately from Murud-Janjira kitchen. Base Rate covers up to 500g. Each additional 500g adds the Slab Add-on.
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 2: Mumbai MMR, Thane & Pune (~120-150 km)</span>
+                        <span className="text-sky-800 font-mono">PIN: 400, 401, 410, 411</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Fee || 95}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Slab || 45}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 3: Rest of Maharashtra & Goa (~340 km)</span>
+                        <span className="text-sky-800 font-mono">PIN: 412-445, 403</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Fee || 125}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Slab || 55}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 4: Neighbouring States (Gujarat, Karnataka, MP, etc.)</span>
+                        <span className="text-sky-800 font-mono">PIN: 38, 56, 45...</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Fee || 160}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Slab || 65}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 5: Delhi NCR & National Metros</span>
+                        <span className="text-sky-800 font-mono">PIN: 11, 60, 70...</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Fee || 195}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Slab || 75}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 6: Rest of India & Outstation</span>
+                        <span className="text-sky-800 font-mono">Pan-India Express</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Fee || 240}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Slab || 90}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 1: Local Murud-Janjira & Raigad Coastline</span>
+                        <span className="text-sky-800 font-mono">PIN: 402xxx</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone1Fee || 75}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone1Slab || 35}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-sky-50 p-3.5 rounded-2xl border border-sky-200">
+                      <label className="block text-[11px] font-bold text-sky-950 mb-1">Fallback Standard Delivery Rate â‚¹ (used if pincode is unverified):</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={ownerConfig.shippingFee || 95}
+                        onChange={(e) => setOwnerConfig({ ...ownerConfig, shippingFee: Number(e.target.value) })}
+                        className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-stone-50 border-t flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeliveryRateModal(false)}
+                    className="px-4 py-2 text-xs font-bold text-stone-600 hover:text-stone-900"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      localStorage.setItem("ckp_owner_config_v6", JSON.stringify(ownerConfig));
+                      setHasUnpublishedChanges(true);
+                      if (pincodeInput && pincodeInput.length === 6) {
+                        const updated = calculateDelhiveryShipping(pincodeInput);
+                        setPincodeResult(updated);
+                      }
+                      setShowDeliveryRateModal(false);
+                      alert("Delhivery shipping rates updated successfully! Click 'ðŸš€ Publish Live to Customers' in the top bar to synchronize across all customer devices.");
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2"
+                  >
+                    <span>âœ“</span>
+                    <span>Save Rates & Apply Live</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* ================= STEP 1: CUSTOMER ADDRESS CHECKOUT MODAL ================= */}
