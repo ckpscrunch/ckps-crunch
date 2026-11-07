@@ -1,0 +1,236 @@
+[
+  {
+    "id": "dryfish-01",
+    "name": "Sun-Dried Baby Prawns (Cleaned Sukha Jhinga / Chemmeen)",
+    "category": "Dry Fish",
+    "subCategory": "Coastal Delicacies",
+    "tag": "Coastal Bestseller",
+    "spiceLevel": 2,
+    "description": "Fresh coastal prawns naturally sun-dried on clean coastal sands. Head & tail sorted, high in protein, zero chemical preservatives or coloring. Ideal for roasting, stir-fries, and spicy gravies.",
+    "dietary": ["100% Sun-Dried", "High Protein", "Cleaned & Salted"],
+    "rating": 4.9,
+    "reviewsCount": 245,
+    "image": "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "200g Pack", "price": 220, "originalPrice": 280 },
+      { "size": "500g Value Pack", "price": 520, "originalPrice": 650 },
+      { "size": "1kg Family Pack", "price": 980, "originalPrice": 1250 }
+    ],
+    "ingredients": "Wild caught sea prawns, natural sea salt.",
+    "shelfLife": "6 Months in cool dry place"
+  },
+  {
+    "id": "dryfish-02",
+    "name": "Konkan Crispy Bombay Duck (Cleaned Sukha Bombil)",
+    "category": "Dry Fish",
+    "subCategory": "Coastal Delicacies",
+    "tag": "Crispy Fry Favorite",
+    "spiceLevel": 2,
+    "description": "Authentic coastal Maharashtra Bombay Duck. Gutted, thoroughly washed in sea water, and sun-dried on bamboo scaffolds. Fries up extraordinarily crunchy and aromatic.",
+    "dietary": ["Naturally Cured", "Authentic Konkan", "Sand-Free"],
+    "rating": 4.8,
+    "reviewsCount": 198,
+    "image": "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "250g Pack", "price": 190, "originalPrice": 240 },
+      { "size": "500g Pack", "price": 360, "originalPrice": 450 },
+      { "size": "1kg Bulk Pack", "price": 690, "originalPrice": 850 }
+    ],
+    "ingredients": "Fresh Bombay Duck (Harpadon nehereus), natural sea salt.",
+    "shelfLife": "8 Months"
+  },
+  {
+    "id": "dryfish-03",
+    "name": "Silver Anchovies (Nethili Karuvadu / Sukha Koli)",
+    "category": "Dry Fish",
+    "subCategory": "Coastal Delicacies",
+    "tag": "South Coastal Gem",
+    "spiceLevel": 2,
+    "description": "Small, tender silver-line anchovies sun-cured naturally. Prized in Chettinad and Kerala cuisines for fiery Karuvadu curry and quick tawa pan fry with onion & green chillies.",
+    "dietary": ["Rich in Omega-3", "Calcium Rich", "Traditional Cure"],
+    "rating": 4.9,
+    "reviewsCount": 172,
+    "image": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "200g Pack", "price": 180, "originalPrice": 230 },
+      { "size": "500g Pack", "price": 420, "originalPrice": 520 }
+    ],
+    "ingredients": "Small Anchovies, Rock Sea Salt.",
+    "shelfLife": "6 Months"
+  },
+  {
+    "id": "dryfish-04",
+    "name": "Artisanal Spicy Prawn Pickle (Goan / Kerala Style Jhinga Achaar)",
+    "category": "Dry Fish",
+    "subCategory": "Fish Pickles",
+    "tag": "Chef's Special",
+    "spiceLevel": 4,
+    "description": "Succulent prawns crisp-fried in cold-pressed gingelly oil, simmered in a fiery roasted masala paste, garlic flakes, and natural coconut vinegar. A heavenly match with hot rice.",
+    "dietary": ["Real Fried Prawns", "Cold-Pressed Gingelly Oil", "Fiery Coastal Recipe"],
+    "rating": 5.0,
+    "reviewsCount": 320,
+    "image": "https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "250g Glass Jar", "price": 320, "originalPrice": 390 },
+      { "size": "500g Glass Jar", "price": 590, "originalPrice": 720 }
+    ],
+    "ingredients": "Fresh Sea Prawns, Gingelly Oil, Garlic, Ginger, Kashmiri Chilli, Fenugreek, Mustard, Natural Coconut Vinegar, Salt.",
+    "shelfLife": "9 Months from packing"
+  },
+  {
+    "id": "spice-01",
+    "name": "Royal Shahi Garam Masala (Stone-Ground 16 Whole Spices)",
+    "category": "Spices",
+    "subCategory": "Specialty Blends",
+    "tag": "Signature Blend",
+    "spiceLevel": 3,
+    "description": "Slow-roasted mace, green & black cardamom, dagad phool, star anise, and cloves ground slowly to retain natural volatile essential oils. Imparts deep royal aroma to curries and biryanis.",
+    "dietary": ["Zero Fillers", "Aroma Sealed", "100% Pure"],
+    "rating": 5.0,
+    "reviewsCount": 512,
+    "image": "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "100g Pouch", "price": 145, "originalPrice": 180 },
+      { "size": "250g Tin Can", "price": 320, "originalPrice": 399 },
+      { "size": "500g Saver Pack", "price": 590, "originalPrice": 720 }
+    ],
+    "ingredients": "Coriander, Cumin, Black Cardamom, Green Cardamom, Cinnamon, Cloves, Mace, Nutmeg, Star Anise, Bay Leaves, Stone Flower.",
+    "shelfLife": "12 Months"
+  },
+  {
+    "id": "spice-02",
+    "name": "Pure Salem Lakadong Turmeric Powder (Curcumin > 7%)",
+    "category": "Spices",
+    "subCategory": "Single-Origin Spices",
+    "tag": "Superfood",
+    "spiceLevel": 1,
+    "description": "Organically grown high-curcumin turmeric roots sun-dried and slowly pulverized. Gives a vibrant golden hue, earthy aroma, and powerful anti-inflammatory benefits.",
+    "dietary": ["Lab Tested Curcumin", "Non-Polished", "Non-GMO"],
+    "rating": 4.9,
+    "reviewsCount": 420,
+    "image": "https://images.unsplash.com/photo-1615485290119-98a3204927b9?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "200g Pouch", "price": 120, "originalPrice": 150 },
+      { "size": "500g Zip Lock", "price": 260, "originalPrice": 330 },
+      { "size": "1kg Bulk Pack", "price": 490, "originalPrice": 620 }
+    ],
+    "ingredients": "100% Pure Lakadong / Salem Natural Turmeric Rhizomes.",
+    "shelfLife": "18 Months"
+  },
+  {
+    "id": "spice-03",
+    "name": "Coastal Fish Fry & Curry Roast Masala",
+    "category": "Spices",
+    "subCategory": "Seafood Blends",
+    "tag": "Must Try for Fish",
+    "spiceLevel": 4,
+    "description": "Authentic coastal blend with Byadgi chillies, coriander, fennel, black pepper, and roasted garlic. Makes restaurant-grade crispy fish rava fry and rich seafood curries.",
+    "dietary": ["No Added MSG", "Stone Ground", "Restaurant Secret"],
+    "rating": 4.9,
+    "reviewsCount": 285,
+    "image": "https://images.unsplash.com/photo-1509358271058-acd22cc93898?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "150g Pouch", "price": 130, "originalPrice": 165 },
+      { "size": "300g Jar", "price": 240, "originalPrice": 310 }
+    ],
+    "ingredients": "Byadgi Chilli, Guntur Chilli, Coriander, Cumin, Mustard, Fennel, Black Pepper, Garlic powder, Triphala.",
+    "shelfLife": "9 Months"
+  },
+  {
+    "id": "spice-04",
+    "name": "Pampore Grade-A Kashmiri Mongra Saffron (Kesar)",
+    "category": "Spices",
+    "subCategory": "Exotic Spices",
+    "tag": "GI Certified",
+    "spiceLevel": 1,
+    "description": "Hand-picked pure deep crimson stigmas of saffron flowers from Pampore, Kashmir. Regal aroma and radiant golden tint for biryani, kheer, and badam milk.",
+    "dietary": ["100% Genuine Mongra", "Grade-A Export Quality"],
+    "rating": 5.0,
+    "reviewsCount": 188,
+    "image": "https://images.unsplash.com/photo-1608797178974-15b35a64a30a?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "1 Gram Glass Vial", "price": 390, "originalPrice": 480 },
+      { "size": "2 Grams Velvet Box", "price": 740, "originalPrice": 920 }
+    ],
+    "ingredients": "100% Natural Kashmiri Mongra Saffron Threads.",
+    "shelfLife": "24 Months"
+  },
+  {
+    "id": "pickle-01",
+    "name": "Grandma's Sun-Dried Mango Pickle (Khatta-Teekha Aam Achaar)",
+    "category": "Pickles",
+    "subCategory": "Traditional Pickles",
+    "tag": "All-Time Bestseller",
+    "spiceLevel": 3,
+    "description": "Hand-cut raw Ramkela mangoes marinated in cold-pressed mustard oil, fenugreek, nigella seeds, and sun-matured for 21 days in traditional earthen barnis.",
+    "dietary": ["Preservative Free", "Sun Matured", "Cold-Pressed Oil"],
+    "rating": 4.9,
+    "reviewsCount": 384,
+    "image": "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "250g Glass Jar", "price": 180, "originalPrice": 220 },
+      { "size": "500g Barni Pack", "price": 340, "originalPrice": 420 },
+      { "size": "1kg Family Tub", "price": 620, "originalPrice": 780 }
+    ],
+    "ingredients": "Raw Mango, Kachi Ghani Mustard Oil, Fenugreek, Fennel, Kalonji, Red Chilli, Rock Salt, Turmeric, Asafoetida (Hing).",
+    "shelfLife": "12 Months from packing"
+  },
+  {
+    "id": "pickle-02",
+    "name": "Banarasi Stuffed Red Chilli Pickle (Bharwa Lal Mirch)",
+    "category": "Pickles",
+    "subCategory": "Stuffed Pickles",
+    "tag": "Heritage Recipe",
+    "spiceLevel": 4,
+    "description": "Plump winter red chillies hand-stuffed with a roasted 12-spice masala blend and aged in pure virgin mustard oil.",
+    "dietary": ["Authentic Banarasi", "No Artificial Preservatives"],
+    "rating": 5.0,
+    "reviewsCount": 290,
+    "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "300g Jar", "price": 240, "originalPrice": 290 },
+      { "size": "500g Jar", "price": 380, "originalPrice": 480 },
+      { "size": "1kg Pack", "price": 690, "originalPrice": 850 }
+    ],
+    "ingredients": "Fresh Red Chillies, Mustard Seeds, Dry Mango Powder (Amchur), Saunf, Ajwain, Black Salt, Mustard Oil.",
+    "shelfLife": "9 Months from packing"
+  },
+  {
+    "id": "pickle-03",
+    "name": "Desi Lahsun Teekha Achaar (Spicy Garlic & Mustard Pickle)",
+    "category": "Pickles",
+    "subCategory": "Spicy & Rustic",
+    "tag": "Immunity Booster",
+    "spiceLevel": 4,
+    "description": "Peeled country garlic pods tempered with crushed yellow mustard seeds, curry leaves, and spicy red flakes. Pairs heavenly with parathas and dal chawal.",
+    "dietary": ["Rich in Allicin", "No Added Vinegar"],
+    "rating": 4.9,
+    "reviewsCount": 210,
+    "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "250g Jar", "price": 210, "originalPrice": 260 },
+      { "size": "500g Jar", "price": 380, "originalPrice": 470 }
+    ],
+    "ingredients": "Desi Garlic, Mustard Seeds, Cold-Pressed Mustard Oil, Fenugreek, Red Chilli, Turmeric, Salt.",
+    "shelfLife": "12 Months"
+  },
+  {
+    "id": "pickle-04",
+    "name": "Sweet & Sour Lemon Pickle (Oil-Free Nimbu Khatta Meetha)",
+    "category": "Pickles",
+    "subCategory": "Zero Oil",
+    "tag": "Gut Friendly",
+    "spiceLevel": 1,
+    "description": "Thin-skinned Kagzi lemons slowly aged under natural sunlight with organic jaggery, black cumin, and rock salt. 100% oil-free and aids healthy digestion.",
+    "dietary": ["Zero Oil", "Jaggery Sweetened", "Digestive"],
+    "rating": 4.8,
+    "reviewsCount": 165,
+    "image": "https://images.unsplash.com/photo-1589135233689-d56d11b33036?auto=format&fit=crop&w=800&q=80",
+    "variants": [
+      { "size": "250g Jar", "price": 160, "originalPrice": 199 },
+      { "size": "500g Jar", "price": 299, "originalPrice": 380 }
+    ],
+    "ingredients": "Kagzi Lemons, Organic Desi Gur (Jaggery), Rock Salt, Black Pepper, Cumin, Hing.",
+    "shelfLife": "18 Months"
+  }
+]
