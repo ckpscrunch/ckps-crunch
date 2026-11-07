@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,10 +6,10 @@
   <title>CKP's Crunch | Coastal Dry Fish, Ancestral Spices & Barni Pickles</title>
   <meta name="description" content="CKP's Crunch - Direct coastal orders. Crispy sun-dried fish, stone-ground masalas, and earthen barni pickles." />
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Standard Clean Modern Indian E-Commerce Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -34,9 +34,9 @@
             }
           },
           fontFamily: {
-            brand: ['"Cinzel"', 'Georgia', 'serif'],
-            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-            hand: ['"Caveat"', 'cursive']
+            brand: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            hand: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif']
           }
         }
       }
@@ -443,35 +443,35 @@
     // Complete Website Customizer Defaults (Owner can change every image, text, logo & emoji)
     const DEFAULT_SITE_CONTENT = {
       // 1. Logos & Branding
-      logoType: "emoji", // 'emoji' or 'image'
-      logoEmoji: "🐟",
+      logoType: "emoji",
+      logoEmoji: "ðŸŸ",
       logoImageUrl: "",
       storeTitle: "CKP's Crunch",
-      storeSubtitle: "Coastal Seafood • Masalas • Pickles",
+      storeSubtitle: "Coastal Seafood â€¢ Ancestral Masalas â€¢ Barni Pickles",
 
       // 2. Top Notification Strip
-      topAnnouncement: "🌊 Fresh Coastal Catch: Direct from Konkan Shores! Cleaned Sun-Dried Fish, Spices & Barni Pickles 🦐",
+      topAnnouncement: "ðŸŒŠ Fresh Coastal Catch: Direct from Konkan Shores! Cleaned Sun-Dried Fish, Spices & Barni Pickles ðŸ“¦",
 
       // 3. Navigation Items (Emojis & Texts)
-      navAllEmoji: "🛒",
+      navAllEmoji: "âœ¨",
       navAllText: "All",
-      navDryFishEmoji: "🐟",
+      navDryFishEmoji: "ðŸŸ",
       navDryFishText: "Dry Fish",
-      navSpicesEmoji: "🌿",
+      navSpicesEmoji: "ðŸŒ¶ï¸",
       navSpicesText: "Spices",
-      navPicklesEmoji: "🏺",
+      navPicklesEmoji: "ðŸº",
       navPicklesText: "Pickles",
-      navCartEmoji: "🛍️",
+      navCartEmoji: "ðŸ›’",
       navCartText: "Cart",
       navSignInText: "Sign In",
 
       // 4. Hero Ocean Waves Banner
-      heroBadgeEmoji: "🌊",
-      heroBadge: "Konkan Coast Direct • Hand-Cured Sun Delicacies",
+      heroBadgeEmoji: "ðŸŒŠ",
+      heroBadge: "Konkan Coast Direct â€¢ Hand-Cured Sun Delicacies",
       heroHeading: "Pure Coastal Heritage. Zero Compromise.",
       heroQuote: "\"Crispy Sun-Dried Bombil & Kolambi that take you straight to Alibaug shore!\"",
       heroBgVideo: "https://cdn.coverr.co/videos/coverr-waves-crashing-on-a-tropical-beach/1080p.mp4",
-      heroPosterImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+      heroPosterImage: "https://images.unsplash.com/photo-1507525428033-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
 
       // 5. The 3 Department Showcase Cards (Images, Emojis, Badges, Titles & Taglines)
       dryFishCardImage: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
@@ -491,7 +491,7 @@
 
       // 6. Product Catalog Grid
       catalogTitle: "Konkan Coastal Offerings",
-      catalogSubtitle: "Direct Konkan coastal quality packed fresh to order.",
+      catalogSubtitle: "Direct Konkan coastal quality packed fresh to order. Dispatched in 24 hours.",
       searchPlaceholder: "Search Bombil, Kolambi, Masala...",
 
       // 7. Footer & Notices
@@ -1234,6 +1234,42 @@
         }));
         setEditingProductModal(null); setHasUnpublishedChanges(true);
         alert("Product details updated successfully!");
+      };
+
+      // Direct In-Place Field & Variant Editors for every single element on Product Page
+      const updateActiveProductField = (field, value) => {
+        if (!activeProductDetail) return;
+        setProducts(prev => prev.map(p => {
+          if (p.id === activeProductDetail.id) {
+            const updated = { ...p, [field]: value };
+            setActiveProductDetail(updated);
+            if (quickViewProduct && quickViewProduct.id === p.id) setQuickViewProduct(updated);
+            return updated;
+          }
+          return p;
+        }));
+        setHasUnpublishedChanges(true);
+      };
+
+      const updateActiveProductVariant = (variantIdx, price, originalPrice, weight) => {
+        if (!activeProductDetail) return;
+        setProducts(prev => prev.map(p => {
+          if (p.id === activeProductDetail.id) {
+            const newVariants = [...p.variants];
+            newVariants[variantIdx] = {
+              ...newVariants[variantIdx],
+              price: Number(price),
+              originalPrice: originalPrice ? Number(originalPrice) : newVariants[variantIdx].originalPrice,
+              weight: weight || newVariants[variantIdx].weight
+            };
+            const updated = { ...p, variants: newVariants };
+            setActiveProductDetail(updated);
+            if (quickViewProduct && quickViewProduct.id === p.id) setQuickViewProduct(updated);
+            return updated;
+          }
+          return p;
+        }));
+        setHasUnpublishedChanges(true);
       };
 
       // Handler for adding real / custom customer review
@@ -2551,39 +2587,55 @@
               </header>
 
               {viewMode === "product" && activeProductDetail ? (
-                // ================= DEDICATED SEPARATE PRODUCT PAGE =================
+                // ================= DEDICATED SEPARATE PRODUCT PAGE (STANDARD INDIAN ENGLISH & RUPEES) =================
                 (() => {
                   const p = activeProductDetail;
                   const currentVariant = p.variants[detailVariantIdx] || p.variants[0];
                   const hasDiscount = currentVariant && currentVariant.originalPrice && currentVariant.originalPrice > currentVariant.price;
                   const discountPct = hasDiscount ? Math.round(((currentVariant.originalPrice - currentVariant.price) / currentVariant.originalPrice) * 100) : 0;
+                  const savings = hasDiscount ? (currentVariant.originalPrice - currentVariant.price) : 0;
                   const relatedProducts = products.filter(item => item.id !== p.id).slice(0, 4);
 
                   return (
-                    <main className="min-h-screen bg-stone-50 pb-20 animate-fadeIn flex-1">
+                    <main className="min-h-screen bg-stone-50 pb-20 animate-fadeIn flex-1 font-sans">
+                      
                       {/* Top Bar / Breadcrumb Navigation */}
                       <div className="bg-white border-b border-stone-200 sticky top-20 z-30 shadow-xs">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                          
                           <button
                             onClick={backToStore}
                             className="inline-flex items-center gap-2 bg-stone-900 hover:bg-stone-800 text-amber-300 font-bold px-4 py-2 rounded-xl text-xs sm:text-sm shadow-sm transition"
                           >
-                            <span>â† Back to Storefront Catalog</span>
+                            <span>&#8592; Back to Storefront Catalog</span>
                           </button>
+
                           <div className="flex items-center gap-2 text-xs font-semibold text-stone-500">
                             <span className="cursor-pointer hover:text-stone-900" onClick={backToStore}>Home</span>
                             <span>/</span>
-                            <span className="text-sky-800 font-bold">{p.category}</span>
+                            <span
+                              onClick={() => {
+                                if (isEditor) {
+                                  const c = prompt("Edit Category (Dry Fish / Spices / Pickles):", p.category);
+                                  if (c) updateActiveProductField("category", c.trim());
+                                }
+                              }}
+                              className={`text-sky-800 font-bold ${isEditor ? "cursor-pointer hover:underline" : ""}`}
+                              title={isEditor ? "Owner: Click to edit category" : ""}
+                            >
+                              {p.category}
+                            </span>
                             <span>/</span>
                             <span className="text-stone-900 truncate max-w-[200px] font-bold">{p.name}</span>
                           </div>
+
                           {isEditor && (
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => setEditingProductModal({ ...p })}
                                 className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black px-3.5 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
                               >
-                                <span>ðŸ“ Edit Details</span>
+                                <span>&#9998; Edit All Details &amp; Pricing</span>
                               </button>
                               <button
                                 onClick={() => setEditingImageModal({
@@ -2593,17 +2645,18 @@
                                 })}
                                 className="bg-sky-800 hover:bg-sky-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
                               >
-                                <span>ðŸ“· Change Photo</span>
+                                <span>&#128247; Change Photo</span>
                               </button>
                               <button
                                 onClick={publishLiveToCloud}
                                 disabled={isPublishing}
-                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
                               >
-                                <span>{isPublishing ? "â³ Syncing..." : "ðŸš€ Publish Live"}</span>
+                                <span>{isPublishing ? "Publishing..." : "&#128640; Publish Live to Customers"}</span>
                               </button>
                             </div>
                           )}
+
                         </div>
                       </div>
 
@@ -2619,14 +2672,42 @@
                                 alt={p.name}
                                 className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${p.stock <= 0 ? 'grayscale opacity-60' : ''}`}
                               />
-                              {p.isTopSeller && (
-                                <div className="absolute top-4 left-4 bg-gradient-to-r from-red-600 to-amber-600 text-white font-black text-xs px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                                  <span>ðŸ”¥</span> <span>Top Selling Konkan Favorite</span>
-                                </div>
-                              )}
-                              <div className="absolute bottom-4 left-4 bg-stone-900/85 backdrop-blur text-amber-200 font-bold text-xs px-3 py-1 rounded-full shadow">
-                                {p.tag}
+
+                              {/* Top Seller Badge */}
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    updateActiveProductField("isTopSeller", !p.isTopSeller);
+                                  }
+                                }}
+                                className={`absolute top-4 left-4 font-bold text-xs px-3.5 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transition ${
+                                  p.isTopSeller
+                                    ? "bg-gradient-to-r from-red-600 to-amber-600 text-white"
+                                    : (isEditor ? "bg-stone-900/60 text-stone-300 hover:bg-stone-900" : "hidden")
+                                } ${isEditor ? "cursor-pointer" : ""}`}
+                                title={isEditor ? "Owner: Click to toggle Top Seller badge" : ""}
+                              >
+                                <span>&#128293;</span>
+                                <span>{p.isTopSeller ? "Top Selling Konkan Item" : "+ Mark as Top Seller"}</span>
                               </div>
+
+                              {/* Custom Tag Badge */}
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const t = prompt("Edit Custom Badge / Tag text:", p.tag);
+                                    if (t !== null && t.trim()) updateActiveProductField("tag", t.trim());
+                                  }
+                                }}
+                                className={`absolute bottom-4 left-4 bg-stone-900/85 backdrop-blur text-amber-200 font-bold text-xs px-3 py-1 rounded-full shadow ${
+                                  isEditor ? "cursor-pointer hover:bg-stone-800 border border-dashed border-amber-400" : ""
+                                }`}
+                                title={isEditor ? "Owner: Click to edit badge tag" : ""}
+                              >
+                                {p.tag} {isEditor && <span>(Edit)</span>}
+                              </div>
+
+                              {/* Sold Out Overlay */}
                               {p.stock <= 0 && (
                                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                                   <span className="bg-red-700 text-white font-black text-sm px-5 py-2 rounded-full uppercase tracking-widest shadow-2xl">
@@ -2634,6 +2715,8 @@
                                   </span>
                                 </div>
                               )}
+
+                              {/* Photo Change Button Overlay for Owner */}
                               {isEditor && (
                                 <button
                                   onClick={() => setEditingImageModal({
@@ -2641,27 +2724,43 @@
                                     label: `Photo for ${p.name}`,
                                     currentUrl: p.image
                                   })}
-                                  className="absolute top-4 right-4 bg-black/80 hover:bg-black text-amber-300 font-bold text-xs px-3 py-1.5 rounded-xl shadow-lg border border-amber-400 flex items-center gap-1.5 transition"
+                                  className="absolute top-4 right-4 bg-black/85 hover:bg-black text-amber-300 font-bold text-xs px-3 py-1.5 rounded-xl shadow-lg border border-amber-400 flex items-center gap-1.5 transition"
                                 >
-                                  <span>ðŸ“· Change Photo</span>
+                                  <span>&#128247; Change Photo</span>
                                 </button>
                               )}
                             </div>
 
                             {/* Trust Badges */}
                             <div className="grid grid-cols-3 gap-3 text-center">
-                              <div className="bg-sky-50/80 border border-sky-100 p-3 rounded-2xl">
-                                <div className="text-xl">ðŸŒŠ</div>
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const o = prompt("Edit Coastal Origin Trust Note:", p.origin || "Direct Sea Catch");
+                                    if (o) updateActiveProductField("origin", o.trim());
+                                  }
+                                }}
+                                className={`bg-sky-50/80 border border-sky-100 p-3 rounded-2xl ${isEditor ? "cursor-pointer hover:border-sky-300" : ""}`}
+                              >
+                                <div className="text-xl">&#127754;</div>
                                 <div className="text-[11px] font-bold text-sky-950 mt-1">Direct Sea Catch</div>
-                                <div className="text-[10px] text-sky-700">Cleaned & sun-cured</div>
+                                <div className="text-[10px] text-sky-700">Cleaned &amp; sun-cured</div>
                               </div>
-                              <div className="bg-amber-50/80 border border-amber-100 p-3 rounded-2xl">
-                                <div className="text-xl">ðŸº</div>
-                                <div className="text-[11px] font-bold text-amber-950 mt-1">CKP Recipe</div>
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const prep = prompt("Edit Recipe Note:", p.preparation || "Authentic CKP Recipe");
+                                    if (prep) updateActiveProductField("preparation", prep.trim());
+                                  }
+                                }}
+                                className={`bg-amber-50/80 border border-amber-100 p-3 rounded-2xl ${isEditor ? "cursor-pointer hover:border-amber-300" : ""}`}
+                              >
+                                <div className="text-xl">&#127994;</div>
+                                <div className="text-[11px] font-bold text-amber-950 mt-1">Authentic CKP Recipe</div>
                                 <div className="text-[10px] text-amber-700">Generations-old craft</div>
                               </div>
                               <div className="bg-emerald-50/80 border border-emerald-100 p-3 rounded-2xl">
-                                <div className="text-xl">ðŸŒ¿</div>
+                                <div className="text-xl">&#127807;</div>
                                 <div className="text-[11px] font-bold text-emerald-950 mt-1">100% Pure</div>
                                 <div className="text-[10px] text-emerald-700">Zero preservatives</div>
                               </div>
@@ -2671,68 +2770,164 @@
                           {/* Right Column: Pricing, Stepper, Actions */}
                           <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
                             <div className="space-y-4">
+                              
+                              {/* Category & Spice Level */}
                               <div className="flex items-center gap-3">
-                                <span className="text-[11px] font-bold text-sky-800 bg-sky-100 px-3 py-1 rounded-full uppercase tracking-wider">
-                                  {p.category}
+                                <span
+                                  onClick={() => {
+                                    if (isEditor) {
+                                      const c = prompt("Edit Category (Dry Fish / Spices / Pickles):", p.category);
+                                      if (c) updateActiveProductField("category", c.trim());
+                                    }
+                                  }}
+                                  className={`text-[11px] font-bold text-sky-800 bg-sky-100 px-3 py-1 rounded-full uppercase tracking-wider ${isEditor ? "cursor-pointer hover:bg-sky-200" : ""}`}
+                                >
+                                  {p.category} {isEditor && <span>&#9998;</span>}
                                 </span>
-                                <span className="text-xs text-stone-500 font-medium">
-                                  Spice Level: {p.spiceLevel || "Medium Konkan Heat"}
+                                <span
+                                  onClick={() => {
+                                    if (isEditor) {
+                                      const sp = prompt("Edit Spice Level (e.g. Mild, Medium Konkan Heat, Extra Spicy):", p.spiceLevelText || "Medium Konkan Heat");
+                                      if (sp) updateActiveProductField("spiceLevelText", sp.trim());
+                                    }
+                                  }}
+                                  className={`text-xs text-stone-500 font-medium ${isEditor ? "cursor-pointer hover:text-stone-800" : ""}`}
+                                >
+                                  Spice Level: {p.spiceLevelText || "Medium Konkan Heat"} {isEditor && <span>&#9998;</span>}
                                 </span>
                               </div>
 
-                              <h1 className="font-brand text-3xl sm:text-4xl font-black text-stone-900 leading-tight">
-                                {p.name}
-                              </h1>
+                              {/* Product Title (Canva-Editable on Click) */}
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    setCanvaBar({
+                                      key: `${p.id}_name`,
+                                      label: `Product Title: ${p.name}`,
+                                      value: p.name,
+                                      fontSize: siteContent[`${p.id}_name_fontSize`] || 32,
+                                      color: siteContent[`${p.id}_name_color`] || "#1c1917",
+                                      isBold: siteContent[`${p.id}_name_bold`] !== false,
+                                      isItalic: Boolean(siteContent[`${p.id}_name_italic`])
+                                    });
+                                  }
+                                }}
+                                className={`relative group ${isEditor ? "cursor-pointer p-1 rounded-xl hover:bg-amber-50/50 border border-transparent hover:border-dashed hover:border-amber-400" : ""}`}
+                                title={isEditor ? "Owner: Click to edit title and change font size with Canva toolbar" : ""}
+                              >
+                                <h1
+                                  style={{
+                                    fontSize: siteContent[`${p.id}_name_fontSize`] ? `${siteContent[`${p.id}_name_fontSize`]}px` : undefined,
+                                    color: siteContent[`${p.id}_name_color`] || undefined,
+                                    fontWeight: siteContent[`${p.id}_name_bold`] === false ? "normal" : "900",
+                                    fontStyle: siteContent[`${p.id}_name_italic`] ? "italic" : "normal"
+                                  }}
+                                  className="text-3xl sm:text-4xl font-black text-stone-900 leading-tight"
+                                >
+                                  {siteContent[`${p.id}_name`] || p.name}
+                                </h1>
+                                {isEditor && (
+                                  <span className="hidden group-hover:inline-block text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded ml-2">
+                                    &#9998; Click to edit &amp; change font size
+                                  </span>
+                                )}
+                              </div>
 
-                              <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
-                                {p.tagline || p.description}
-                              </p>
+                              {/* Tagline / Subtitle */}
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const tg = prompt("Edit Product Tagline / Subtitle:", p.tagline || p.description);
+                                    if (tg !== null) updateActiveProductField("tagline", tg.trim());
+                                  }
+                                }}
+                                className={`text-stone-600 text-sm sm:text-base leading-relaxed ${isEditor ? "cursor-pointer p-1 rounded-xl hover:bg-amber-50/50 border border-transparent hover:border-dashed hover:border-amber-400" : ""}`}
+                                title={isEditor ? "Owner: Click to edit tagline" : ""}
+                              >
+                                <p>{p.tagline || p.description}</p>
+                              </div>
 
                               {/* Ratings & Social Proof */}
                               <div className="flex items-center gap-3 py-2 border-y border-stone-100">
                                 <div className="flex text-amber-400 text-base">
-                                  {"â˜…".repeat(5)}
+                                  &#9733;&#9733;&#9733;&#9733;&#9733;
                                 </div>
                                 <span className="font-bold text-xs text-stone-800">4.9 / 5.0</span>
                                 <span className="text-stone-300">|</span>
                                 <span className="text-xs text-stone-500 font-medium">98 Verified Konkan Food Enthusiasts</span>
                               </div>
 
-                              {/* Price */}
-                              <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200/80 flex items-baseline gap-3">
+                              {/* Price Display in Indian Rupees (â‚¹) */}
+                              <div
+                                onClick={() => {
+                                  if (isEditor) {
+                                    const newPrice = prompt("Enter new Selling Price in Rupees (â‚¹):", currentVariant.price);
+                                    if (newPrice !== null && !isNaN(Number(newPrice))) {
+                                      const newOrig = prompt("Enter MRP / Original Price in Rupees (â‚¹):", currentVariant.originalPrice || Number(newPrice) + 50);
+                                      updateActiveProductVariant(detailVariantIdx, newPrice, newOrig);
+                                    }
+                                  }
+                                }}
+                                className={`bg-stone-50 p-4 rounded-2xl border border-stone-200/80 flex items-baseline gap-3 ${
+                                  isEditor ? "cursor-pointer hover:bg-amber-50/50 border-dashed hover:border-amber-400" : ""
+                                }`}
+                                title={isEditor ? "Owner: Click to edit price & MRP in Rupees" : ""}
+                              >
                                 <span className="text-3xl sm:text-4xl font-black text-stone-900">
-                                  â‚¹{currentVariant.price}
+                                  &#8377;{currentVariant.price}
                                 </span>
                                 {hasDiscount && (
                                   <>
                                     <span className="text-base text-stone-400 line-through">
-                                      â‚¹{currentVariant.originalPrice}
+                                      &#8377;{currentVariant.originalPrice}
                                     </span>
                                     <span className="bg-emerald-100 text-emerald-800 font-bold text-xs px-2.5 py-0.5 rounded-full">
-                                      Save {discountPct}% (â‚¹{currentVariant.originalPrice - currentVariant.price} OFF)
+                                      Save {discountPct}% (&#8377;{savings} OFF)
                                     </span>
                                   </>
+                                )}
+                                {isEditor && (
+                                  <span className="text-[11px] text-amber-800 font-bold ml-auto bg-amber-100 px-2 py-0.5 rounded">
+                                    &#9998; Edit Price
+                                  </span>
                                 )}
                               </div>
 
                               {/* Pack / Weight Options */}
                               <div>
-                                <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">
-                                  Select Pack / Weight Size
-                                </label>
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider">
+                                    Select Pack / Weight Size
+                                  </label>
+                                  {isEditor && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const wName = prompt("Edit weight label for this pack:", currentVariant.weight);
+                                        const wRate = prompt("Edit price (â‚¹) for this pack:", currentVariant.price);
+                                        if (wName && wRate) {
+                                          updateActiveProductVariant(detailVariantIdx, wRate, null, wName);
+                                        }
+                                      }}
+                                      className="text-[11px] font-bold text-amber-800 hover:text-amber-900 underline"
+                                    >
+                                      &#9998; Edit Selected Pack Rate
+                                    </button>
+                                  )}
+                                </div>
                                 <div className="flex flex-wrap gap-2.5">
                                   {p.variants.map((v, idx) => (
                                     <button
                                       key={idx}
                                       onClick={() => setDetailVariantIdx(idx)}
-                                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
+                                      className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 border ${
                                         detailVariantIdx === idx
                                           ? "bg-stone-900 text-amber-300 border-stone-900 shadow-sm"
                                           : "bg-white text-stone-700 border-stone-300 hover:border-stone-500"
                                       }`}
                                     >
                                       <span>{v.weight}</span>
-                                      <span className="text-[11px] opacity-80">â‚¹{v.price}</span>
+                                      <span className="text-[11px] opacity-80">&#8377;{v.price}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -2747,7 +2942,7 @@
                                   <div className="flex items-center border border-stone-300 rounded-xl bg-white shadow-xs">
                                     <button
                                       onClick={() => setDetailQty(Math.max(1, detailQty - 1))}
-                                      className="px-3 py-1.5 text-stone-600 hover:text-stone-900 font-bold"
+                                      className="px-3.5 py-1.5 text-stone-600 hover:text-stone-900 font-bold text-sm"
                                     >
                                       -
                                     </button>
@@ -2756,22 +2951,33 @@
                                     </span>
                                     <button
                                       onClick={() => setDetailQty(detailQty + 1)}
-                                      className="px-3 py-1.5 text-stone-600 hover:text-stone-900 font-bold"
+                                      className="px-3.5 py-1.5 text-stone-600 hover:text-stone-900 font-bold text-sm"
                                     >
                                       +
                                     </button>
                                   </div>
                                 </div>
 
-                                <div className="pt-5">
+                                <div
+                                  onClick={() => {
+                                    if (isEditor) {
+                                      const st = prompt("Enter Available Stock Units:", p.stock);
+                                      if (st !== null && !isNaN(Number(st))) {
+                                        updateActiveProductField("stock", Number(st));
+                                      }
+                                    }
+                                  }}
+                                  className={`pt-5 ${isEditor ? "cursor-pointer" : ""}`}
+                                  title={isEditor ? "Owner: Click to edit stock quantity" : ""}
+                                >
                                   {p.stock > 0 ? (
                                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                      In Stock ({p.stock} units available)
+                                      In Stock ({p.stock} units available) {isEditor && <span>&#9998;</span>}
                                     </span>
                                   ) : (
                                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 px-3 py-1.5 rounded-xl border border-red-200">
-                                      Out of Stock (Fresh batch being cured)
+                                      Out of Stock (Fresh batch being cured) {isEditor && <span>&#9998;</span>}
                                     </span>
                                   )}
                                 </div>
@@ -2791,7 +2997,7 @@
                                   }}
                                   className="w-full bg-stone-900 hover:bg-stone-800 disabled:bg-stone-300 text-amber-300 font-bold py-3.5 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm"
                                 >
-                                  <span>ðŸ›’</span>
+                                  <span>&#128722;</span>
                                   <span>Add {detailQty > 1 ? `${detailQty} Packs` : ""} to Cart</span>
                                 </button>
 
@@ -2804,7 +3010,7 @@
                                   }}
                                   className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:from-stone-300 disabled:to-stone-300 text-stone-950 font-black py-3.5 px-6 rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-sm"
                                 >
-                                  <span>âš¡</span>
+                                  <span>&#9889;</span>
                                   <span>Buy Now</span>
                                 </button>
                               </div>
@@ -2815,15 +3021,15 @@
                                 rel="noopener noreferrer"
                                 className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs"
                               >
-                                <span>ðŸ’¬</span>
+                                <span>&#128172;</span>
                                 <span>Order Directly via WhatsApp</span>
                               </a>
                             </div>
 
                             {/* Delivery highlights */}
                             <div className="text-[11px] text-stone-500 space-y-1 pt-2">
-                              <div>ðŸšš <strong>Fast Courier:</strong> Dispatched in 24 hours across Mumbai, Pune, Thane & All India.</div>
-                              <div>ðŸ“¦ <strong>Aroma-Shield Pack:</strong> Multi-layer vacuum sealed to retain ocean freshness.</div>
+                              <div>&#128666; <strong>Fast Courier:</strong> Dispatched in 24 hours across Mumbai, Pune, Thane &amp; All India.</div>
+                              <div>&#128230; <strong>Aroma-Shield Pack:</strong> Multi-layer vacuum sealed to retain ocean freshness.</div>
                             </div>
 
                           </div>
@@ -2833,8 +3039,8 @@
                         <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm space-y-6">
                           <div className="flex items-center justify-between border-b pb-4">
                             <div>
-                              <h3 className="font-brand text-2xl font-black text-stone-900">
-                                Culinary Heritage & Cooking Secrets
+                              <h3 className="text-2xl font-black text-stone-900">
+                                Culinary Heritage &amp; Cooking Secrets
                               </h3>
                               <p className="text-xs text-stone-500 mt-1">
                                 Traditional coastal techniques preserved by CKP families for generations.
@@ -2845,47 +3051,89 @@
                                 onClick={() => setEditingProductModal({ ...p })}
                                 className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-3 py-1.5 rounded-xl transition"
                               >
-                                ðŸ“ Edit Heritage Info
+                                &#9998; Edit Heritage Info
                               </button>
                             )}
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="bg-sky-50/60 p-4 rounded-2xl border border-sky-100 space-y-1.5">
+                            
+                            {/* Card 1: Coastal Origin */}
+                            <div
+                              onClick={() => {
+                                if (isEditor) {
+                                  const org = prompt("Edit Coastal Origin:", p.origin || "Alibaug & Ratnagiri Coastline, Maharashtra");
+                                  if (org !== null) updateActiveProductField("origin", org.trim());
+                                }
+                              }}
+                              className={`bg-sky-50/60 p-4 rounded-2xl border border-sky-100 space-y-1.5 ${isEditor ? "cursor-pointer hover:border-sky-300" : ""}`}
+                              title={isEditor ? "Owner: Click to edit origin" : ""}
+                            >
                               <div className="text-xs font-bold text-sky-800 uppercase flex items-center gap-1.5">
-                                <span>ðŸŒŠ</span> Coastal Origin
+                                <span>&#127754;</span> Coastal Origin {isEditor && <span>&#9998;</span>}
                               </div>
                               <p className="text-xs text-stone-700 font-medium leading-relaxed">
                                 {p.origin || "Alibaug & Ratnagiri Coastline, Maharashtra"}
                               </p>
                             </div>
 
-                            <div className="bg-amber-50/60 p-4 rounded-2xl border border-amber-100 space-y-1.5">
+                            {/* Card 2: Traditional Curing */}
+                            <div
+                              onClick={() => {
+                                if (isEditor) {
+                                  const pr = prompt("Edit Traditional Curing Method:", p.preparation || p.description);
+                                  if (pr !== null) updateActiveProductField("preparation", pr.trim());
+                                }
+                              }}
+                              className={`bg-amber-50/60 p-4 rounded-2xl border border-amber-100 space-y-1.5 ${isEditor ? "cursor-pointer hover:border-amber-300" : ""}`}
+                              title={isEditor ? "Owner: Click to edit curing method" : ""}
+                            >
                               <div className="text-xs font-bold text-amber-800 uppercase flex items-center gap-1.5">
-                                <span>ðŸº</span> Traditional Curing
+                                <span>&#127994;</span> Traditional Curing {isEditor && <span>&#9998;</span>}
                               </div>
                               <p className="text-xs text-stone-700 font-medium leading-relaxed">
                                 {p.preparation || p.description}
                               </p>
                             </div>
 
-                            <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100 space-y-1.5">
+                            {/* Card 3: Best Cooking Style */}
+                            <div
+                              onClick={() => {
+                                if (isEditor) {
+                                  const ck = prompt("Edit Best Cooking Style & Tips:", p.cookTips || "Crispy pan fry with kokum and garlic, or slow simmer in spicy coconut curry.");
+                                  if (ck !== null) updateActiveProductField("cookTips", ck.trim());
+                                }
+                              }}
+                              className={`bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100 space-y-1.5 ${isEditor ? "cursor-pointer hover:border-emerald-300" : ""}`}
+                              title={isEditor ? "Owner: Click to edit cooking style" : ""}
+                            >
                               <div className="text-xs font-bold text-emerald-800 uppercase flex items-center gap-1.5">
-                                <span>ðŸ³</span> Best Cooking Style
+                                <span>&#127859;</span> Best Cooking Style {isEditor && <span>&#9998;</span>}
                               </div>
                               <p className="text-xs text-stone-700 font-medium leading-relaxed">
                                 {p.cookTips || "Crispy pan fry with kokum and garlic, or slow simmer in spicy coconut curry."}
                               </p>
                             </div>
 
-                            <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1.5">
+                            {/* Card 4: Shelf Life & Storage */}
+                            <div
+                              onClick={() => {
+                                if (isEditor) {
+                                  const sl = prompt("Edit Shelf Life & Storage Instructions:", p.shelfLife || "8-9 Months (Store in airtight container in a cool, dry pantry)");
+                                  if (sl !== null) updateActiveProductField("shelfLife", sl.trim());
+                                }
+                              }}
+                              className={`bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-1.5 ${isEditor ? "cursor-pointer hover:border-stone-400" : ""}`}
+                              title={isEditor ? "Owner: Click to edit shelf life" : ""}
+                            >
                               <div className="text-xs font-bold text-stone-800 uppercase flex items-center gap-1.5">
-                                <span>â³</span> Shelf Life & Storage
+                                <span>&#9203;</span> Shelf Life &amp; Storage {isEditor && <span>&#9998;</span>}
                               </div>
                               <p className="text-xs text-stone-700 font-medium leading-relaxed">
-                                {p.shelfLife || "9 Months (Store in airtight container in a cool, dry pantry)"}
+                                {p.shelfLife || "8-9 Months (Store in airtight container in a cool, dry pantry)"}
                               </p>
                             </div>
+
                           </div>
                         </div>
 
@@ -2893,19 +3141,19 @@
                         <div className="mt-12 bg-white rounded-3xl p-6 sm:p-10 border border-stone-200 shadow-sm space-y-6">
                           <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-4">
                             <div>
-                              <h3 className="font-brand text-2xl font-black text-stone-900">
+                              <h3 className="text-2xl font-black text-stone-900">
                                 Verified Konkan Customer Reviews
                               </h3>
                               <p className="text-xs text-stone-500 mt-1">
-                                Rated â˜…â˜…â˜…â˜…â˜… 4.9/5 by authentic CKP cuisine connoisseurs.
+                                Rated &#9733;&#9733;&#9733;&#9733;&#9733; 4.9/5 by authentic CKP cuisine connoisseurs.
                               </p>
                             </div>
                             {isEditor && (
                               <button
                                 onClick={() => {
-                                  const name = prompt("Customer Name & City (e.g. Anand Chitnis, Dadar):");
+                                  const name = prompt("Customer Name & City (e.g. Anand Chitnis, Dadar Mumbai):");
                                   if (!name) return;
-                                  const comment = prompt("Review Comment:");
+                                  const comment = prompt("Customer Review Text:");
                                   if (!comment) return;
                                   const newReview = {
                                     id: "rev_" + Date.now(),
@@ -2930,7 +3178,7 @@
                                 }}
                                 className="bg-sky-800 hover:bg-sky-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition"
                               >
-                                <span>âž• Add Customer Review</span>
+                                <span>+ Add Real Customer Review</span>
                               </button>
                             )}
                           </div>
@@ -2940,26 +3188,26 @@
                               { id: "1", author: "Pradnya Gupte (Dadar, Mumbai)", rating: 5, verified: true, date: "2 days ago", comment: "The aroma when fried in mustard oil took me right back to our ancestral home in Alibaug! Zero fishy smell, completely clean and crisp." },
                               { id: "2", author: "Adv. Shrikant Deshmukh (Thane West)", rating: 5, verified: true, date: "1 week ago", comment: "Best quality in Mumbai. Perfectly salted and cured. Pairs like heaven with hot Varan Bhaat and ghee!" }
                             ]).map((rev) => (
-                              <div key={rev.id} className="bg-stone-50/70 p-4 rounded-2xl border border-stone-200/80 space-y-2 relative">
+                              <div key={rev.id || rev.name} className="bg-stone-50/70 p-4 rounded-2xl border border-stone-200/80 space-y-2 relative">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-700 to-amber-600 text-white font-black text-xs flex items-center justify-center">
-                                      {rev.author.charAt(0)}
+                                      {(rev.author || rev.name || "C").charAt(0)}
                                     </div>
                                     <div>
                                       <div className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
-                                        <span>{rev.author}</span>
-                                        {rev.verified && <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">âœ“ Verified</span>}
+                                        <span>{rev.author || rev.name}</span>
+                                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded">&#10003; Verified</span>
                                       </div>
                                       <div className="text-[10px] text-stone-400">{rev.date || "Verified Purchase"}</div>
                                     </div>
                                   </div>
                                   <div className="text-amber-400 text-xs font-bold">
-                                    {"â˜…".repeat(rev.rating || 5)}
+                                    {"&#9733;".repeat(rev.rating || 5).replace(/&#9733;/g, "â˜…")}
                                   </div>
                                 </div>
                                 <p className="text-xs text-stone-700 leading-relaxed italic">
-                                  "{rev.comment}"
+                                  "{rev.comment || rev.text}"
                                 </p>
                                 {isEditor && (
                                   <button
@@ -2969,7 +3217,7 @@
                                           if (prod.id === p.id) {
                                             const updated = {
                                               ...prod,
-                                              reviews: (prod.reviews || []).filter(r => r.id !== rev.id)
+                                              reviews: (prod.reviews || []).filter(r => (r.id !== rev.id && r.name !== rev.name))
                                             };
                                             setActiveProductDetail(updated);
                                             return updated;
@@ -2989,10 +3237,10 @@
                           </div>
                         </div>
 
-                        {/* Shop More Items Section */}
+                        {/* Shop More Handcrafted Konkan Delicacies */}
                         <div className="mt-12 space-y-6">
                           <div>
-                            <h3 className="font-brand text-2xl font-black text-stone-900">
+                            <h3 className="text-2xl font-black text-stone-900">
                               Shop More Handcrafted Konkan Delicacies
                             </h3>
                             <p className="text-xs text-stone-500 mt-1">
@@ -3020,10 +3268,10 @@
                                 <div className="p-3 flex-1 flex flex-col justify-between space-y-2">
                                   <div>
                                     <div className="text-[10px] font-bold text-sky-800 uppercase">{rel.category}</div>
-                                    <h4 className="font-brand font-bold text-xs text-stone-900 line-clamp-1 group-hover:text-sky-900">{rel.name}</h4>
+                                    <h4 className="font-bold text-xs text-stone-900 line-clamp-1 group-hover:text-sky-900">{rel.name}</h4>
                                   </div>
                                   <div className="flex items-center justify-between pt-1 border-t">
-                                    <span className="font-black text-xs text-stone-900">â‚¹{rel.variants[0]?.price}</span>
+                                    <span className="font-black text-xs text-stone-900">&#8377;{rel.variants[0]?.price}</span>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -3049,7 +3297,7 @@
                 })()
               ) : (
                 <>
-                  {/* ================= HERO WITH REAL OCEAN WAVES VIDEO BACKGROUND & LIVE MOVING WAVES ================= */}
+              {/* ================= HERO WITH REAL OCEAN WAVES VIDEO BACKGROUND & LIVE MOVING WAVES ================= */}
               <section className="ocean-video-hero text-white pt-16 pb-28 relative">
                 {/* Real Looping Coastal Ocean Waves Video with Guaranteed Autoplay */}
                 <video
