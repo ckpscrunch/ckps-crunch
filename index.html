@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -568,7 +568,29 @@
             zone5Fee: 195,
             zone5Slab: 75,
             zone6Fee: 240,
-            zone6Slab: 90
+            zone6Slab: 90,
+            zone1Fee250: 55,
+            zone1Fee500: 75,
+            zone1Fee1kg: 110,
+            zone2Fee250: 70,
+            zone2Fee500: 95,
+            zone2Fee1kg: 140,
+            zone3Fee250: 90,
+            zone3Fee500: 125,
+            zone3Fee1kg: 180,
+            zone4Fee250: 120,
+            zone4Fee500: 160,
+            zone4Fee1kg: 230,
+            zone5Fee250: 145,
+            zone5Fee500: 195,
+            zone5Fee1kg: 280,
+            zone6Fee250: 175,
+            zone6Fee500: 240,
+            zone6Fee1kg: 340,
+            fallbackFee250: 70,
+            fallbackFee500: 95,
+            fallbackFee1kg: 140,
+            fallbackSlab: 45
           };
           return s ? { ...defConfig, ...JSON.parse(s) } : defConfig;
         } catch(e) {
@@ -744,31 +766,91 @@
         distanceKm: 120,
         rate: 95,
         baseRate: 95,
+        fee250: 70,
+        fee500: 95,
+        fee1kg: 140,
         slabAddon: 45,
         days: "1-2 business days",
         courier: "Delhivery Direct Surface Express"
       });
       const [isPincodeLoading, setIsPincodeLoading] = useState(false);
 
+      // Unified calculator for weight slabs: 250g, 500g, 1kg, and per +500g above 1kg
+      const computeShippingForWeight = (pincodeRes, weightGrams) => {
+        const w = Number(weightGrams) > 0 ? Number(weightGrams) : 250;
+        const f250 = pincodeRes?.fee250 || ownerConfig.fallbackFee250 || ownerConfig.zone2Fee250 || 70;
+        const f500 = pincodeRes?.fee500 || pincodeRes?.baseRate || ownerConfig.fallbackFee500 || ownerConfig.shippingFee || 95;
+        const f1kg = pincodeRes?.fee1kg || ownerConfig.fallbackFee1kg || ownerConfig.zone2Fee1kg || 140;
+        const slab = pincodeRes?.slabAddon || ownerConfig.fallbackSlab || ownerConfig.zone2Slab || 45;
+
+        if (w <= 250) {
+          return {
+            fee: f250,
+            slabLabel: "250g Slab",
+            slabTier: "250g",
+            weightGrams: w,
+            fee250: f250,
+            fee500: f500,
+            fee1kg: f1kg,
+            slabAddon: slab
+          };
+        } else if (w <= 500) {
+          return {
+            fee: f500,
+            slabLabel: "500g Slab",
+            slabTier: "500g",
+            weightGrams: w,
+            fee250: f250,
+            fee500: f500,
+            fee1kg: f1kg,
+            slabAddon: slab
+          };
+        } else if (w <= 1000) {
+          return {
+            fee: f1kg,
+            slabLabel: "1 kg Slab",
+            slabTier: "1kg",
+            weightGrams: w,
+            fee250: f250,
+            fee500: f500,
+            fee1kg: f1kg,
+            slabAddon: slab
+          };
+        } else {
+          const extraSlabs = Math.ceil((w - 1000) / 500);
+          return {
+            fee: f1kg + (extraSlabs * slab),
+            slabLabel: 1 kg + g Extra Slab,
+            slabTier: "above1kg",
+            extraSlabs: extraSlabs,
+            weightGrams: w,
+            fee250: f250,
+            fee500: f500,
+            fee1kg: f1kg,
+            slabAddon: slab
+          };
+        }
+      };
+
       const calculateDelhiveryShipping = (pin) => {
         if (!pin || pin.length !== 6 || isNaN(Number(pin))) return null;
         const prefix2 = pin.substring(0, 2);
         const prefix3 = pin.substring(0, 3);
 
-        // Realistic Delhivery Surface & Air commercial courier rates (customizable by store owner)
-        const z1Rate = ownerConfig.zone1Fee || 75;
-        const z2Rate = ownerConfig.zone2Fee || 95;
-        const z3Rate = ownerConfig.zone3Fee || 125;
-        const z4Rate = ownerConfig.zone4Fee || 160;
-        const z5Rate = ownerConfig.zone5Fee || 195;
-        const z6Rate = ownerConfig.zone6Fee || 240;
+        const getZoneRates = (zNum, def250, def500, def1kg, defSlab) => {
+          const f500 = ownerConfig["zone" + zNum + "Fee500"] || ownerConfig["zone" + zNum + "Fee"] || def500;
+          const f250 = ownerConfig["zone" + zNum + "Fee250"] || def250;
+          const f1kg = ownerConfig["zone" + zNum + "Fee1kg"] || def1kg;
+          const slab = ownerConfig["zone" + zNum + "Slab"] || defSlab;
+          return { fee250: f250, fee500: f500, fee1kg: f1kg, slabAddon: slab, baseRate: f500, rate: f500 };
+        };
 
-        const z1Slab = ownerConfig.zone1Slab || 35;
-        const z2Slab = ownerConfig.zone2Slab || 45;
-        const z3Slab = ownerConfig.zone3Slab || 55;
-        const z4Slab = ownerConfig.zone4Slab || 65;
-        const z5Slab = ownerConfig.zone5Slab || 75;
-        const z6Slab = ownerConfig.zone6Slab || 90;
+        const z1 = getZoneRates(1, 55, 75, 110, 35);
+        const z2 = getZoneRates(2, 70, 95, 140, 45);
+        const z3 = getZoneRates(3, 90, 125, 180, 55);
+        const z4 = getZoneRates(4, 120, 160, 230, 65);
+        const z5 = getZoneRates(5, 145, 195, 280, 75);
+        const z6 = getZoneRates(6, 175, 240, 340, 90);
 
         // Zone 1: Local Murud-Janjira & Raigad Coastline (402xxx)
         if (prefix3 === "402") {
@@ -777,11 +859,9 @@
             district: pin === "402401" ? "Murud-Janjira (Local Kitchen)" : "Raigad Coastal Belt",
             state: "Maharashtra",
             distanceKm: pin === "402401" ? 5 : 35,
-            rate: z1Rate,
-            baseRate: z1Rate,
-            slabAddon: z1Slab,
             days: "1-2 days (Next Day Delivery)",
-            courier: "Delhivery Local Coastal Surface"
+            courier: "Delhivery Local Coastal Surface",
+            ...z1
           };
         }
 
@@ -793,11 +873,9 @@
             district: isPune ? "Pune" : (prefix3 === "400" ? "Mumbai" : "Thane / Navi Mumbai"),
             state: "Maharashtra",
             distanceKm: isPune ? 145 : 120,
-            rate: z2Rate,
-            baseRate: z2Rate,
-            slabAddon: z2Slab,
             days: "1-2 business days",
-            courier: "Delhivery Direct Surface Express"
+            courier: "Delhivery Direct Surface Express",
+            ...z2
           };
         }
 
@@ -808,11 +886,9 @@
             district: prefix3 === "403" ? "Goa" : "Maharashtra Interior",
             state: prefix3 === "403" ? "Goa" : "Maharashtra",
             distanceKm: 340,
-            rate: z3Rate,
-            baseRate: z3Rate,
-            slabAddon: z3Slab,
             days: "2-3 business days",
-            courier: "Delhivery Express Surface Parcel"
+            courier: "Delhivery Express Surface Parcel",
+            ...z3
           };
         }
 
@@ -823,11 +899,9 @@
             district: ["56", "57"].includes(prefix2) ? "Bengaluru" : (["38", "39"].includes(prefix2) ? "Ahmedabad" : "South/Central India"),
             state: ["38", "39"].includes(prefix2) ? "Gujarat" : (["56", "57", "58", "59"].includes(prefix2) ? "Karnataka" : "South India"),
             distanceKm: 780,
-            rate: z4Rate,
-            baseRate: z4Rate,
-            slabAddon: z4Slab,
             days: "3-4 business days",
-            courier: "Delhivery Air / Surface Express"
+            courier: "Delhivery Air / Surface Express",
+            ...z4
           };
         }
 
@@ -838,11 +912,9 @@
             district: prefix2 === "11" ? "New Delhi" : (prefix2 === "60" ? "Chennai" : (prefix2 === "70" ? "Kolkata" : "National Metro")),
             state: prefix2 === "11" ? "Delhi" : "National Express",
             distanceKm: 1350,
-            rate: z5Rate,
-            baseRate: z5Rate,
-            slabAddon: z5Slab,
             days: "3-5 business days",
-            courier: "Delhivery Air Priority Express"
+            courier: "Delhivery Air Priority Express",
+            ...z5
           };
         }
 
@@ -852,11 +924,9 @@
           district: "Rest of India",
           state: "India",
           distanceKm: 1850,
-          rate: z6Rate,
-          baseRate: z6Rate,
-          slabAddon: z6Slab,
           days: "4-7 business days",
-          courier: "Delhivery Air Express Parcel"
+          courier: "Delhivery Air Express Parcel",
+          ...z6
         };
       };
 
@@ -1148,14 +1218,10 @@
         return cart.reduce((tot, i) => tot + parseWeightGrams(i.weight, i.size) * i.quantity, 0);
       }, [cart]);
       const isFreeDelivery = false; // Free delivery offer removed: actual shipping applies to all orders
-      const baseShippingFee = useMemo(() => {
-        if (!pincodeResult) return ownerConfig.shippingFee || 50;
-        const base = pincodeResult.baseRate || pincodeResult.rate || 60;
-        const slab = pincodeResult.slabAddon || 25;
-        const totalW = cartTotalWeightGrams > 0 ? cartTotalWeightGrams : 250;
-        const extraSlabs = Math.max(0, Math.ceil((totalW - 500) / 500));
-        return base + (extraSlabs * slab);
-      }, [pincodeResult, cartTotalWeightGrams, ownerConfig.shippingFee]);
+      const cartShippingInfo = useMemo(() => {
+        return computeShippingForWeight(pincodeResult, cartTotalWeightGrams > 0 ? cartTotalWeightGrams : 250);
+      }, [pincodeResult, cartTotalWeightGrams, ownerConfig]);
+      const baseShippingFee = cartShippingInfo.fee;
       const shippingCharge = cartSubtotal > 0 ? baseShippingFee : 0;
       const cartTotal = cartSubtotal + shippingCharge;
       const totalItemsCount = cart.reduce((c, i) => c + i.quantity, 0);
@@ -2049,9 +2115,19 @@
                         <h3 className="text-xl font-black text-stone-900">Delivery Charges &amp; Shipping Management</h3>
                         <p className="text-xs text-stone-500 mt-1">Customize shipping charges and free delivery thresholds as per your business preference.</p>
                       </div>
-                      <span className="bg-sky-100 text-sky-900 text-xs font-bold px-3 py-1 rounded-full">
-                        Origin: Murud-Janjira (402401)
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowDeliveryRateModal(true)}
+                          className="bg-sky-900 hover:bg-sky-800 text-white font-bold px-4 py-2 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                        >
+                          <span>ðŸ“¦</span>
+                          <span>Manage 250g, 500g, 1kg Slabs</span>
+                        </button>
+                        <span className="bg-sky-100 text-sky-900 text-xs font-bold px-3 py-1 rounded-full">
+                          Origin: Murud-Janjira (402401)
+                        </span>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
@@ -3092,14 +3168,9 @@
                   const currentItemSubtotal = (currentVariant?.price || 0) * detailQty;
                   const isCurrentItemFreeDelivery = false; // Free delivery removed
 
-                  // Dynamic Delhivery delivery charge as per weight & distance from Murud-Janjira
-                  const currentDelhiveryCharge = (() => {
-                    if (!pincodeResult) return ownerConfig.shippingFee || 50;
-                    const base = pincodeResult.baseRate || pincodeResult.rate || 60;
-                    const slab = pincodeResult.slabAddon || 25;
-                    const extraSlabs = Math.max(0, Math.ceil((totalSelectedWeightGrams - 500) / 500));
-                    return base + (extraSlabs * slab);
-                  })();
+                  // Dynamic Delhivery delivery charge as per 250g, 500g, 1kg slabs & distance from Murud-Janjira
+                  const currentShippingCalc = computeShippingForWeight(pincodeResult, totalSelectedWeightGrams);
+                  const currentDelhiveryCharge = currentShippingCalc.fee;
 
                   // Multi-image list for product: uses p.images array or defaults to [p.image]
                   const productImages = (p.images && p.images.length > 0) ? p.images : [p.image];
@@ -3679,7 +3750,7 @@
 
                                 {/* Results display */}
                                 {pincodeResult && (
-                                  <div className="bg-white rounded-xl p-3 border border-sky-100 space-y-2 text-xs animate-fadeIn shadow-xs">
+                                  <div className="bg-white rounded-xl p-3 border border-sky-100 space-y-2.5 text-xs animate-fadeIn shadow-xs">
                                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2">
                                       <div className="flex items-center gap-1.5 font-bold text-stone-900">
                                         <span className="text-emerald-600 font-black">&#10003;</span>
@@ -3693,12 +3764,15 @@
                                     <div className="flex flex-wrap items-center justify-between gap-2">
                                       <div>
                                         <div className="text-[11px] text-stone-500 font-medium">
-                                          {pincodeResult.courier} • Parcel: <strong className="text-stone-800">{displayWeightStr}</strong>
+                                          {pincodeResult.courier} â€¢ Parcel: <strong className="text-stone-800">{displayWeightStr}</strong>
+                                          <span className="ml-2 inline-block bg-sky-100 text-sky-900 font-bold px-2 py-0.5 rounded text-[10px]">
+                                            {currentShippingCalc.slabLabel}
+                                          </span>
                                         </div>
                                         <div className="text-sm font-black text-stone-900 flex flex-wrap items-center gap-2">
                                           <span>Delivery Charge: &#8377;{currentDelhiveryCharge}</span>
                                           <span className="text-[11px] font-normal text-stone-500">
-                                            (for {displayWeightStr} parcel from Murud-Janjira)
+                                            ({currentShippingCalc.slabLabel} for {displayWeightStr})
                                           </span>
                                         </div>
                                       </div>
@@ -3714,9 +3788,41 @@
                                       </div>
                                     </div>
 
+                                    {/* Transparent 250g, 500g, 1kg Slabs Overview */}
+                                    <div className="pt-2 border-t border-stone-100">
+                                      <div className="text-[10px] font-bold text-stone-600 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                        <span>Delivery Weight Slabs:</span>
+                                        <span className="text-sky-700 font-semibold normal-case">Active slab highlighted</span>
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                        <div className={p-2 rounded-xl border transition-all }>
+                                          <div className="text-[10px] text-stone-500 font-semibold">250g Slab</div>
+                                          <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee250 || 70}</div>
+                                          <div className="text-[9px] text-stone-400 mt-0.5">Up to 250g</div>
+                                        </div>
+
+                                        <div className={p-2 rounded-xl border transition-all }>
+                                          <div className="text-[10px] text-stone-500 font-semibold">500g Slab</div>
+                                          <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee500 || 95}</div>
+                                          <div className="text-[9px] text-stone-400 mt-0.5">251g - 500g</div>
+                                        </div>
+
+                                        <div className={p-2 rounded-xl border transition-all }>
+                                          <div className="text-[10px] text-stone-500 font-semibold">1 kg Slab</div>
+                                          <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee1kg || 140}</div>
+                                          <div className="text-[9px] text-stone-400 mt-0.5">501g - 1 kg</div>
+                                        </div>
+                                      </div>
+                                      {totalSelectedWeightGrams > 1000 && (
+                                        <div className="mt-1.5 text-[10px] text-sky-900 bg-sky-50 px-2 py-1 rounded-md font-semibold text-center border border-sky-100">
+                                          Heavy Parcel: +&#8377;{pincodeResult.slabAddon} per additional 500g above 1 kg
+                                        </div>
+                                      )}
+                                    </div>
+
                                     <div className="text-[10px] text-stone-500 pt-1 border-t border-stone-100 flex items-center justify-between">
-                                      <span className="font-semibold text-emerald-800">🔒 100% Secure UPI &amp; Instant QR Payment</span>
-                                      <span>⚡ Dispatched within 24 hours</span>
+                                      <span className="font-semibold text-emerald-800">ðŸ”’ 100% Secure UPI &amp; Instant QR Payment</span>
+                                      <span>âš¡ Dispatched within 24 hours</span>
                                     </div>
                                   </div>
                                 )}
@@ -4594,15 +4700,15 @@
 
                     {/* ================= OWNER DELHIVERY COURIER RATE MANAGER MODAL ================= */}
           {showDeliveryRateModal && (
-            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-              <div className="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-stone-200">
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-stone-200 animate-scaleUp">
                 <div className="p-5 bg-gradient-to-r from-sky-900 to-amber-900 text-white flex justify-between items-center">
                   <div>
                     <h3 className="font-brand font-black text-xl flex items-center gap-2">
                       <span>ðŸ“¦</span>
-                      <span>Delhivery Courier Rates Manager</span>
+                      <span>Delhivery Weight Slabs & Courier Rates</span>
                     </h3>
-                    <p className="text-xs text-sky-200">Set accurate delivery charges based on destination & weight from Murud-Janjira (402401)</p>
+                    <p className="text-xs text-sky-200">Configure exact charges for 250g, 500g, and 1 kg parcels from Murud-Janjira (402401)</p>
                   </div>
                   <button
                     onClick={() => setShowDeliveryRateModal(false)}
@@ -4613,195 +4719,367 @@
                 </div>
 
                 <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-amber-900 text-[11px] font-semibold">
-                    ðŸ’¡ All rates are calculated accurately from Murud-Janjira kitchen. Base Rate covers up to 500g. Each additional 500g adds the Slab Add-on.
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-amber-900 text-[11px] font-semibold space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <span>âš–ï¸</span>
+                      <span>Weight Slabs Divided: 250g â€¢ 500g â€¢ 1 kg</span>
+                    </div>
+                    <div>
+                      Courier charges scale automatically by customer order weight. Parcels exceeding 1 kg add the extra slab fee for each additional 500g.
+                    </div>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
-                      <div className="font-bold text-stone-900 flex justify-between">
-                        <span>Zone 2: Mumbai MMR, Thane & Pune (~120-150 km)</span>
-                        <span className="text-sky-800 font-mono">PIN: 400, 401, 410, 411</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone2Fee || 95}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone2Slab || 45}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
-                      <div className="font-bold text-stone-900 flex justify-between">
-                        <span>Zone 3: Rest of Maharashtra & Goa (~340 km)</span>
-                        <span className="text-sky-800 font-mono">PIN: 412-445, 403</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone3Fee || 125}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone3Slab || 55}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
-                      <div className="font-bold text-stone-900 flex justify-between">
-                        <span>Zone 4: Neighbouring States (Gujarat, Karnataka, MP, etc.)</span>
-                        <span className="text-sky-800 font-mono">PIN: 38, 56, 45...</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone4Fee || 160}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone4Slab || 65}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
-                      <div className="font-bold text-stone-900 flex justify-between">
-                        <span>Zone 5: Delhi NCR & National Metros</span>
-                        <span className="text-sky-800 font-mono">PIN: 11, 60, 70...</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone5Fee || 195}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone5Slab || 75}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
-                      <div className="font-bold text-stone-900 flex justify-between">
-                        <span>Zone 6: Rest of India & Outstation</span>
-                        <span className="text-sky-800 font-mono">Pan-India Express</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone6Fee || 240}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={ownerConfig.zone6Slab || 90}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
+                    {/* Zone 1 */}
                     <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
                       <div className="font-bold text-stone-900 flex justify-between">
                         <span>Zone 1: Local Murud-Janjira & Raigad Coastline</span>
                         <span className="text-sky-800 font-mono">PIN: 402xxx</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Base Rate (up to 500g) â‚¹:</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
-                            value={ownerConfig.zone1Fee || 75}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                            value={ownerConfig.zone1Fee250 || 55}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] text-stone-600 mb-1">Per +500g Slab â‚¹:</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone1Fee500 || ownerConfig.zone1Fee || 75}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee500: Number(e.target.value), zone1Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone1Fee1kg || 110}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
                             value={ownerConfig.zone1Slab || 35}
                             onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Slab: Number(e.target.value) })}
-                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-sky-50 p-3.5 rounded-2xl border border-sky-200">
-                      <label className="block text-[11px] font-bold text-sky-950 mb-1">Fallback Standard Delivery Rate â‚¹ (used if pincode is unverified):</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={ownerConfig.shippingFee || 95}
-                        onChange={(e) => setOwnerConfig({ ...ownerConfig, shippingFee: Number(e.target.value) })}
-                        className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-sm"
-                      />
+                    {/* Zone 2 */}
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 2: Mumbai MMR, Thane & Pune (~120-150 km)</span>
+                        <span className="text-sky-800 font-mono">PIN: 400, 401, 410, 411</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Fee250 || 70}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Fee500 || ownerConfig.zone2Fee || 95}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee500: Number(e.target.value), zone2Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Fee1kg || 140}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone2Slab || 45}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Zone 3 */}
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 3: Rest of Maharashtra & Goa (~340 km)</span>
+                        <span className="text-sky-800 font-mono">PIN: 412-445, 403</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Fee250 || 90}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Fee500 || ownerConfig.zone3Fee || 125}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee500: Number(e.target.value), zone3Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Fee1kg || 180}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone3Slab || 55}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Zone 4 */}
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 4: Neighbouring States (Gujarat, Karnataka, MP, etc.)</span>
+                        <span className="text-sky-800 font-mono">PIN: 38, 56, 45...</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Fee250 || 120}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Fee500 || ownerConfig.zone4Fee || 160}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee500: Number(e.target.value), zone4Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Fee1kg || 230}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone4Slab || 65}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Zone 5 */}
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 5: Delhi NCR & National Metros</span>
+                        <span className="text-sky-800 font-mono">PIN: 11, 60, 70...</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Fee250 || 145}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Fee500 || ownerConfig.zone5Fee || 195}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Fee500: Number(e.target.value), zone5Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Fee1kg || 280}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone5Slab || 75}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone5Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Zone 6 */}
+                    <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                      <div className="font-bold text-stone-900 flex justify-between">
+                        <span>Zone 6: Rest of India & Outstation Remote</span>
+                        <span className="text-sky-800 font-mono">Pan-India Express</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Fee250 || 175}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Fee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Fee500 || ownerConfig.zone6Fee || 240}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Fee500: Number(e.target.value), zone6Fee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Fee1kg || 340}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Fee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.zone6Slab || 90}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, zone6Slab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Standard Fallback */}
+                    <div className="bg-sky-50 p-3.5 rounded-2xl border border-sky-200 space-y-2">
+                      <div className="font-bold text-sky-950 flex justify-between">
+                        <span>Standard Fallback Delivery (Unverified PIN)</span>
+                        <span className="text-sky-800 font-mono">Default fallback</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">250g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.fallbackFee250 || 70}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, fallbackFee250: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">500g Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.fallbackFee500 || ownerConfig.shippingFee || 95}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, fallbackFee500: Number(e.target.value), shippingFee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">1 kg Slab (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.fallbackFee1kg || 140}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, fallbackFee1kg: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">+500g >1kg (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.fallbackSlab || 45}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, fallbackSlab: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-2 bg-white font-mono font-bold text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
@@ -4823,12 +5101,12 @@
                         setPincodeResult(updated);
                       }
                       setShowDeliveryRateModal(false);
-                      alert("Delhivery shipping rates updated successfully! Click 'ðŸš€ Publish Live to Customers' in the top bar to synchronize across all customer devices.");
+                      alert("Delhivery weight slabs (250g, 500g, 1kg) updated successfully! Click 'ðŸš€ Publish Live to Customers' in the top bar to synchronize across all customer devices.");
                     }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2"
                   >
                     <span>âœ“</span>
-                    <span>Save Rates & Apply Live</span>
+                    <span>Save Weight Slabs & Apply Live</span>
                   </button>
                 </div>
               </div>
