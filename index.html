@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -638,6 +638,54 @@
       const [activeProductDetail, setActiveProductDetail] = useState(null);
       const [activeImageIdx, setActiveImageIdx] = useState(0);
 
+      // Track & Cancel Order Customer State
+      const [showTrackOrderModal, setShowTrackOrderModal] = useState(false);
+      const [trackSearchInput, setTrackSearchInput] = useState("");
+      const [trackedOrder, setTrackedOrder] = useState(null);
+      const [orderFilterTab, setOrderFilterTab] = useState("all"); // 'all', 'active', 'cancelled'
+
+      // Customer Order Cancellation Handler
+      const handleCancelCustomerOrder = (orderId) => {
+        const reason = prompt("Please tell us the reason for cancelling this order (e.g. Ordered by mistake, wrong address, duplicate order):", "Ordered by mistake");
+        if (reason === null) return;
+
+        const cancelledTimestamp = new Date().toLocaleString("en-IN");
+        const cleanReason = reason.trim() || "Customer requested cancellation";
+
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId) {
+            return {
+              ...o,
+              status: "Cancelled by Customer",
+              cancellationReason: cleanReason,
+              cancelledAt: cancelledTimestamp
+            };
+          }
+          return o;
+        }));
+
+        if (orderSuccessData && orderSuccessData.orderId === orderId) {
+          setOrderSuccessData(prev => ({
+            ...prev,
+            status: "Cancelled by Customer",
+            cancellationReason: cleanReason,
+            cancelledAt: cancelledTimestamp
+          }));
+        }
+
+        if (trackedOrder && trackedOrder.orderId === orderId) {
+          setTrackedOrder(prev => ({
+            ...prev,
+            status: "Cancelled by Customer",
+            cancellationReason: cleanReason,
+            cancelledAt: cancelledTimestamp
+          }));
+        }
+
+        setHasUnpublishedChanges(true);
+        alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
+      };
+
       // Pincode & Delhivery Courier Delivery Rate Calculator from Murud-Janjira (Raigad 402401)
       const [pincodeInput, setPincodeInput] = useState("400001");
       const [pincodeResult, setPincodeResult] = useState({
@@ -656,6 +704,14 @@
         const prefix2 = pin.substring(0, 2);
         const prefix3 = pin.substring(0, 3);
 
+        // Dynamic rates customized by store owner
+        const z1Rate = ownerConfig.zone1Fee || 40;
+        const z2Rate = ownerConfig.zone2Fee || 60;
+        const z3Rate = ownerConfig.zone3Fee || 80;
+        const z4Rate = ownerConfig.zone4Fee || 110;
+        const z5Rate = ownerConfig.zone5Fee || (z4Rate + 20);
+        const z6Rate = ownerConfig.zone6Fee || (z4Rate + 50);
+
         // Zone 1: Local Murud-Janjira & Raigad Coastline (402xxx)
         if (prefix3 === "402") {
           return {
@@ -663,7 +719,7 @@
             district: pin === "402401" ? "Murud-Janjira (Local Kitchen)" : "Raigad Coastal Belt",
             state: "Maharashtra",
             distanceKm: pin === "402401" ? 5 : 35,
-            rate: 40,
+            rate: z1Rate,
             days: "1-2 days (Next Day Delivery)",
             courier: "Delhivery Local Coastal Surface"
           };
@@ -677,7 +733,7 @@
             district: isPune ? "Pune" : (prefix3 === "400" ? "Mumbai" : "Thane / Navi Mumbai"),
             state: "Maharashtra",
             distanceKm: isPune ? 145 : 120,
-            rate: 60,
+            rate: z2Rate,
             days: "1-2 business days",
             courier: "Delhivery Direct Surface Express"
           };
@@ -690,7 +746,7 @@
             district: prefix3 === "403" ? "Goa" : "Maharashtra Interior",
             state: prefix3 === "403" ? "Goa" : "Maharashtra",
             distanceKm: 340,
-            rate: 80,
+            rate: z3Rate,
             days: "2-3 business days",
             courier: "Delhivery Express Surface Parcel"
           };
@@ -703,7 +759,7 @@
             district: ["56", "57"].includes(prefix2) ? "Bengaluru" : (["38", "39"].includes(prefix2) ? "Ahmedabad" : "South/Central India"),
             state: ["38", "39"].includes(prefix2) ? "Gujarat" : (["56", "57", "58", "59"].includes(prefix2) ? "Karnataka" : "South India"),
             distanceKm: 780,
-            rate: 110,
+            rate: z4Rate,
             days: "3-4 business days",
             courier: "Delhivery Air / Surface Express"
           };
@@ -716,7 +772,7 @@
             district: prefix2 === "11" ? "New Delhi" : (prefix2 === "60" ? "Chennai" : (prefix2 === "70" ? "Kolkata" : "National Metro")),
             state: prefix2 === "11" ? "Delhi" : "National Express",
             distanceKm: 1350,
-            rate: 130,
+            rate: z5Rate,
             days: "3-5 business days",
             courier: "Delhivery Air Priority Express"
           };
@@ -728,7 +784,7 @@
           district: "Rest of India",
           state: "India",
           distanceKm: 1850,
-          rate: 160,
+          rate: z6Rate,
           days: "4-7 business days",
           courier: "Delhivery Air Express Parcel"
         };
@@ -1778,6 +1834,9 @@
                     <button onClick={() => setOwnerTab("orders")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "orders" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
                       📦 Orders ({orders.length})
                     </button>
+                    <button onClick={() => setOwnerTab("delivery")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "delivery" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      🚚 Delivery Rates
+                    </button>
                     <button onClick={() => setOwnerTab("stock")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "stock" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
                       📊 Stock ({products.length})
                     </button>
@@ -1796,11 +1855,34 @@
                 {/* 1. ORDERS TAB */}
                 {ownerTab === "orders" && (
                   <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
-                    <div className="flex justify-between items-center border-b pb-3">
-                      <h3 className="font-brand text-lg font-bold text-stone-900">All Customer Orders & Payments</h3>
-                      <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
-                        {orders.length} Total Orders
-                      </span>
+                    <div className="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+                      <div>
+                        <h3 className="font-brand text-lg font-bold text-stone-900">Customer Orders &amp; Delivery Status</h3>
+                        <p className="text-xs text-stone-500">Live order cancellations and real-time updates from customers.</p>
+                      </div>
+                      <div className="flex gap-1.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterTab("all")}
+                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "all" ? "bg-stone-900 text-white shadow-xs" : "bg-stone-100 text-stone-600 hover:bg-stone-200"}`}
+                        >
+                          All ({orders.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterTab("active")}
+                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "active" ? "bg-emerald-700 text-white shadow-xs" : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"}`}
+                        >
+                          Active ({orders.filter(o => o.status !== "Cancelled by Customer").length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterTab("cancelled")}
+                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "cancelled" ? "bg-red-700 text-white shadow-xs" : "bg-red-50 text-red-800 hover:bg-red-100"}`}
+                        >
+                          Cancelled ({orders.filter(o => o.status === "Cancelled by Customer").length})
+                        </button>
+                      </div>
                     </div>
 
                     {orders.length === 0 ? (
@@ -1810,20 +1892,40 @@
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {orders.map(order => (
-                          <div key={order.orderId} className="bg-stone-50 p-4 rounded-2xl border border-stone-200 text-xs space-y-2">
+                        {orders
+                          .filter(o => orderFilterTab === "all" ? true : (orderFilterTab === "cancelled" ? o.status === "Cancelled by Customer" : o.status !== "Cancelled by Customer"))
+                          .map(order => (
+                          <div key={order.orderId} className={`p-4 rounded-2xl border text-xs space-y-2.5 transition ${
+                            order.status === "Cancelled by Customer"
+                              ? "bg-red-50/70 border-red-200 shadow-xs"
+                              : "bg-stone-50 border-stone-200"
+                          }`}>
                             <div className="flex justify-between items-center border-b pb-2">
                               <div>
                                 <span className="font-black text-sm text-stone-900">{order.orderId}</span>
-                                <span className="text-stone-400 ml-2">({order.date})</span>
+                                <span className="text-stone-400 ml-2">({order.date} {order.time || ""})</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="bg-emerald-100 text-emerald-900 font-bold px-2 py-0.5 rounded text-[10px]">
-                                  {order.status}
+                                <span className={`font-bold px-2.5 py-0.5 rounded text-[10px] ${
+                                  order.status === "Cancelled by Customer"
+                                    ? "bg-red-100 text-red-900 border border-red-300"
+                                    : "bg-emerald-100 text-emerald-900"
+                                }`}>
+                                  {order.status === "Cancelled by Customer" ? "❌ Cancelled by Customer" : order.status}
                                 </span>
                                 <span className="text-base font-black text-stone-900">₹{order.total}</span>
                               </div>
                             </div>
+
+                            {order.status === "Cancelled by Customer" && (
+                              <div className="bg-red-100/90 p-2.5 rounded-xl border border-red-200 text-red-900 font-semibold text-[11px] space-y-0.5">
+                                <div className="font-bold flex items-center gap-1">
+                                  <span>❌</span>
+                                  <span>Customer Cancelled Order</span>
+                                </div>
+                                <div><strong>Reason:</strong> "{order.cancellationReason || "Customer cancelled order"}" {order.cancelledAt && <span className="opacity-75">({order.cancelledAt})</span>}</div>
+                              </div>
+                            )}
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-stone-700">
                               <div className="bg-white p-2.5 rounded-xl border">
@@ -1843,6 +1945,124 @@
                         ))}
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* 1B. OWNER DELIVERY CHARGES & SHIPPING SETTINGS TAB */}
+                {ownerTab === "delivery" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+                      <div>
+                        <h3 className="text-xl font-black text-stone-900">Delivery Charges &amp; Shipping Management</h3>
+                        <p className="text-xs text-stone-500 mt-1">Customize shipping charges and free delivery thresholds as per your business preference.</p>
+                      </div>
+                      <span className="bg-sky-100 text-sky-900 text-xs font-bold px-3 py-1 rounded-full">
+                        Origin: Murud-Janjira (402401)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                      <div className="bg-stone-50 p-5 rounded-2xl border space-y-4">
+                        <h4 className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                          <span>&#128230;</span> General Storewide Shipping Settings
+                        </h4>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Standard Flat Delivery Fee (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.shippingFee}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, shippingFee: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-3 bg-white font-mono font-bold text-sm"
+                          />
+                          <p className="text-[11px] text-stone-500 mt-1">Default flat shipping fee applied at checkout.</p>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Free Delivery Minimum Order Amount (&#8377;):</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={ownerConfig.freeDeliveryMin}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, freeDeliveryMin: Number(e.target.value) })}
+                            className="w-full border rounded-xl p-3 bg-white font-mono font-bold text-sm"
+                          />
+                          <p className="text-[11px] text-stone-500 mt-1">Orders above this amount get 100% FREE delivery (set to 0 to make all orders free delivery).</p>
+                        </div>
+                      </div>
+
+                      <div className="bg-stone-50 p-5 rounded-2xl border space-y-4">
+                        <h4 className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                          <span>&#128666;</span> Delhivery Regional Distance Rates from Murud-Janjira
+                        </h4>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Local Raigad Zone (&#8377;):</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={ownerConfig.zone1Fee || 40}
+                              onChange={(e) => setOwnerConfig({ ...ownerConfig, zone1Fee: Number(e.target.value) })}
+                              className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-stone-500">Alibaug, Murud, Roha (~35km)</span>
+                          </div>
+
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Mumbai &amp; Pune Zone (&#8377;):</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={ownerConfig.zone2Fee || 60}
+                              onChange={(e) => setOwnerConfig({ ...ownerConfig, zone2Fee: Number(e.target.value) })}
+                              className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-stone-500">MMR, Thane, Pune (~120km)</span>
+                          </div>
+
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Rest of Maharashtra &amp; Goa (&#8377;):</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={ownerConfig.zone3Fee || 80}
+                              onChange={(e) => setOwnerConfig({ ...ownerConfig, zone3Fee: Number(e.target.value) })}
+                              className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-stone-500">Kolhapur, Nagpur, Goa</span>
+                          </div>
+
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Pan-India Metros (&#8377;):</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={ownerConfig.zone4Fee || 110}
+                              onChange={(e) => setOwnerConfig({ ...ownerConfig, zone4Fee: Number(e.target.value) })}
+                              className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold"
+                            />
+                            <span className="text-[10px] text-stone-500">Delhi, BLR, Chennai</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-xs text-stone-600">All customer calculations and checkout delivery charges will update immediately.</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.setItem("ckp_owner_config_v6", JSON.stringify(ownerConfig));
+                          setHasUnpublishedChanges(true);
+                          alert("Delivery rates updated successfully! Click 'ðŸš€ Publish Live to Customers' in the top bar to synchronize across all customer devices.");
+                        }}
+                        className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-2"
+                      >
+                        <span>&#10003;</span>
+                        <span>Save Delivery Rates &amp; Apply to Store</span>
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -2695,6 +2915,20 @@
                       </button>
                     )}
 
+                    {/* Customer Track & Cancel Order Button */}
+                    <button
+                      onClick={() => {
+                        setShowTrackOrderModal(true);
+                        setTrackSearchInput("");
+                        setTrackedOrder(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs"
+                      title="Track or Cancel your order"
+                    >
+                      <span>&#128230;</span>
+                      <span className="hidden md:inline">Track / Cancel Order</span>
+                    </button>
+
                     <button
                       onClick={() => setIsCartOpen(true)}
                       className="relative flex items-center gap-2 bg-gradient-to-r from-sky-700 to-amber-700 text-white px-4 py-2.5 rounded-full font-bold shadow-md transition active:scale-95"
@@ -3218,9 +3452,33 @@
                                     <span className="text-base">&#128666;</span>
                                     <span>Delivery &amp; Courier Charges (Delhivery Parcel)</span>
                                   </div>
-                                  <span className="text-[10px] bg-sky-200 text-sky-900 font-bold px-2 py-0.5 rounded-full">
-                                    Origin: Murud-Janjira (402401)
-                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] bg-sky-200 text-sky-900 font-bold px-2 py-0.5 rounded-full">
+                                      Origin: Murud-Janjira (402401)
+                                    </span>
+                                    {isEditor && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newFee = prompt("Enter new Standard Shipping Fee in Rupees (â‚¹):", ownerConfig.shippingFee);
+                                          if (newFee !== null && !isNaN(Number(newFee))) {
+                                            const newMin = prompt("Enter Free Delivery Minimum Order Amount (â‚¹):", ownerConfig.freeDeliveryMin);
+                                            setOwnerConfig(prev => ({
+                                              ...prev,
+                                              shippingFee: Number(newFee),
+                                              freeDeliveryMin: Number(newMin || prev.freeDeliveryMin)
+                                            }));
+                                            setHasUnpublishedChanges(true);
+                                            alert(`Delivery price updated to â‚¹${newFee} (Free above â‚¹${newMin || ownerConfig.freeDeliveryMin})`);
+                                          }
+                                        }}
+                                        className="text-[10px] font-bold text-sky-900 bg-sky-200/80 hover:bg-sky-300 px-2 py-0.5 rounded-lg transition"
+                                        title="Owner: Click to change delivery rates"
+                                      >
+                                        &#9998; Change Delivery Rates
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="flex gap-2">
@@ -3335,15 +3593,7 @@
                                 </button>
                               </div>
 
-                              <a
-                                href={`https://wa.me/919999999999?text=Hello%20CKPs%20Crunch,%20I%20want%20to%20order%20${encodeURIComponent(p.name)}%20(${encodeURIComponent(currentVariant.weight)})%20for%20delivery%20to%20pincode%20${pincodeInput}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs"
-                              >
-                                <span>&#128172;</span>
-                                <span>Order Directly via WhatsApp</span>
-                              </a>
+
                             </div>
 
                             {/* Delivery highlights */}
@@ -4253,9 +4503,131 @@
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button onClick={() => window.print()} className="flex-1 py-2 border rounded-xl font-bold text-xs">🖨️ Print Receipt</button>
-                  <button onClick={() => setOrderSuccessData(null)} className="flex-1 py-2 bg-sky-800 text-white rounded-xl font-bold text-xs">Done</button>
+                <div className="space-y-2 pt-2">
+                  <div className="flex gap-2">
+                    <button onClick={() => window.print()} className="flex-1 py-2.5 border rounded-xl font-bold text-xs hover:bg-stone-50 transition">🖨️ Print Receipt</button>
+                    <button onClick={() => setOrderSuccessData(null)} className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl font-bold text-xs hover:bg-stone-800 transition">Continue Shopping</button>
+                  </div>
+
+                  {orderSuccessData.status !== "Cancelled by Customer" ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCancelCustomerOrder(orderSuccessData.orderId)}
+                      className="w-full py-2.5 border border-red-300 bg-red-50/70 hover:bg-red-100 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <span>❌</span>
+                      <span>Cancel This Order</span>
+                    </button>
+                  ) : (
+                    <div className="bg-red-50 border border-red-200 text-red-800 p-2.5 rounded-xl text-xs font-bold text-center">
+                      ❌ Order Cancelled on {orderSuccessData.cancelledAt || "Recently"}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================= CUSTOMER TRACK & CANCEL ORDER MODAL ================= */}
+          {showTrackOrderModal && (
+            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+                <div className="flex justify-between items-center border-b pb-3">
+                  <div>
+                    <span className="bg-sky-100 text-sky-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Customer Care</span>
+                    <h3 className="font-brand font-black text-xl text-stone-900 mt-1">Track or Cancel Your Order</h3>
+                  </div>
+                  <button onClick={() => setShowTrackOrderModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">&times;</button>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-stone-700">Enter Your Order ID or 10-Digit Mobile Number:</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={trackSearchInput}
+                      onChange={(e) => setTrackSearchInput(e.target.value)}
+                      placeholder="e.g. ORD-123456 or 9820011223"
+                      className="flex-1 border rounded-xl px-3.5 py-2.5 text-xs font-bold font-mono focus:ring-2 focus:ring-sky-700 uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const clean = trackSearchInput.trim().toUpperCase();
+                        if (!clean) return;
+                        const found = orders.find(o => o.orderId.toUpperCase() === clean || (o.customer && o.customer.mobile && o.customer.mobile.replace(/\D/g, '').includes(clean)));
+                        if (found) {
+                          setTrackedOrder(found);
+                        } else {
+                          alert("No order found with that Order ID or Mobile Number. Please check your order confirmation.");
+                          setTrackedOrder(null);
+                        }
+                      }}
+                      className="bg-sky-900 hover:bg-sky-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition"
+                    >
+                      Find Order
+                    </button>
+                  </div>
+                </div>
+
+                {trackedOrder ? (
+                  <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-3 text-xs">
+                    <div className="flex justify-between items-start border-b pb-2">
+                      <div>
+                        <div className="font-black text-sm text-stone-900">{trackedOrder.orderId}</div>
+                        <div className="text-[11px] text-stone-500">Placed on {trackedOrder.date} at {trackedOrder.time || "Recently"}</div>
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${
+                        trackedOrder.status === "Cancelled by Customer"
+                          ? "bg-red-100 text-red-900 border border-red-300"
+                          : "bg-emerald-100 text-emerald-900"
+                      }`}>
+                        {trackedOrder.status === "Cancelled by Customer" ? "❌ Cancelled" : trackedOrder.status}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 text-stone-700">
+                      <div><strong>Customer:</strong> {trackedOrder.customer.fullName} ({trackedOrder.customer.mobile})</div>
+                      <div><strong>Delivery Address:</strong> {trackedOrder.customer.streetAddress}, {trackedOrder.customer.city} - {trackedOrder.customer.pincode}</div>
+                      <div><strong>Items:</strong> {trackedOrder.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(", ")}</div>
+                      <div className="font-bold text-stone-900 pt-1 border-t flex justify-between">
+                        <span>Total Paid:</span>
+                        <span>₹{trackedOrder.total}</span>
+                      </div>
+                    </div>
+
+                    {trackedOrder.status === "Cancelled by Customer" ? (
+                      <div className="bg-red-50 border border-red-200 text-red-800 p-2.5 rounded-xl text-xs font-semibold">
+                        <strong>Order Status:</strong> Cancelled by Customer on {trackedOrder.cancelledAt || "Recently"}.
+                        {trackedOrder.cancellationReason && <div>Reason: "{trackedOrder.cancellationReason}"</div>}
+                      </div>
+                    ) : (
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCancelCustomerOrder(trackedOrder.orderId)}
+                          className="w-full py-2.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                        >
+                          <span>❌</span>
+                          <span>Cancel This Order</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-stone-500 text-center py-4">
+                    Enter your Order ID (from receipt) or Phone Number to view status or cancel an order.
+                  </p>
+                )}
+
+                <div className="border-t pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowTrackOrderModal(false)}
+                    className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold text-xs"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </div>
