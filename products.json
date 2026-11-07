@@ -68,8 +68,9 @@
       },
       {
         "size": "1kg Bulk Pack",
-        "price": 690,
-        "originalPrice": 850
+        "price": 200,
+        "originalPrice": 850,
+        "weight": "100g"
       }
     ],
     "ingredients": "Fresh Bombay Duck (Harpadon nehereus), natural sea salt.",
