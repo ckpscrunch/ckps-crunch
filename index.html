@@ -820,7 +820,7 @@
           const extraSlabs = Math.ceil((w - 1000) / 500);
           return {
             fee: f1kg + (extraSlabs * slab),
-            slabLabel: 1 kg + g Extra Slab,
+            slabLabel: "1 kg + " + (extraSlabs * 500) + "g Extra Slab",
             slabTier: "above1kg",
             extraSlabs: extraSlabs,
             weightGrams: w,
@@ -3795,19 +3795,19 @@
                                         <span className="text-sky-700 font-semibold normal-case">Active slab highlighted</span>
                                       </div>
                                       <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                                        <div className={p-2 rounded-xl border transition-all }>
+                                        <div className={"p-2 rounded-xl border transition-all " + (totalSelectedWeightGrams <= 250 ? "bg-amber-100/90 border-amber-400 font-bold text-stone-950 shadow-sm ring-1 ring-amber-400" : "bg-stone-50/80 border-stone-200 text-stone-600")}>
                                           <div className="text-[10px] text-stone-500 font-semibold">250g Slab</div>
                                           <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee250 || 70}</div>
                                           <div className="text-[9px] text-stone-400 mt-0.5">Up to 250g</div>
                                         </div>
 
-                                        <div className={p-2 rounded-xl border transition-all }>
+                                        <div className={"p-2 rounded-xl border transition-all " + (totalSelectedWeightGrams > 250 && totalSelectedWeightGrams <= 500 ? "bg-amber-100/90 border-amber-400 font-bold text-stone-950 shadow-sm ring-1 ring-amber-400" : "bg-stone-50/80 border-stone-200 text-stone-600")}>
                                           <div className="text-[10px] text-stone-500 font-semibold">500g Slab</div>
                                           <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee500 || 95}</div>
                                           <div className="text-[9px] text-stone-400 mt-0.5">251g - 500g</div>
                                         </div>
 
-                                        <div className={p-2 rounded-xl border transition-all }>
+                                        <div className={"p-2 rounded-xl border transition-all " + (totalSelectedWeightGrams > 500 && totalSelectedWeightGrams <= 1000 ? "bg-amber-100/90 border-amber-400 font-bold text-stone-950 shadow-sm ring-1 ring-amber-400" : "bg-stone-50/80 border-stone-200 text-stone-600")}>
                                           <div className="text-[10px] text-stone-500 font-semibold">1 kg Slab</div>
                                           <div className="font-black text-sm text-sky-950 mt-0.5">&#8377;{pincodeResult.fee1kg || 140}</div>
                                           <div className="text-[9px] text-stone-400 mt-0.5">501g - 1 kg</div>
@@ -4768,7 +4768,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -4818,7 +4818,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -4868,7 +4868,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -4918,7 +4918,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -4968,7 +4968,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -5018,7 +5018,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-stone-600 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
@@ -5068,7 +5068,7 @@
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">+500g >1kg (&#8377;):</label>
+                          <label className="block text-[10px] font-semibold text-sky-900 mb-1">+500g Above 1kg (&#8377;):</label>
                           <input
                             type="number"
                             min="0"
