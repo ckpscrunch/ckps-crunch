@@ -248,51 +248,6 @@
     "tagline": ""
   },
   {
-    "id": "spice-02",
-    "name": "Pure Salem Lakadong Turmeric Powder (Curcumin > 7%)",
-    "category": "Spices",
-    "subCategory": "Single-Origin Spices",
-    "tag": "Superfood",
-    "spiceLevel": 1,
-    "description": "Organically grown high-curcumin turmeric roots sun-dried and slowly pulverized. Gives a vibrant golden hue, earthy aroma, and powerful anti-inflammatory benefits.",
-    "dietary": [
-      "Lab Tested Curcumin",
-      "Non-Polished",
-      "Non-GMO"
-    ],
-    "rating": 4.9,
-    "reviewsCount": 420,
-    "image": "https://images.unsplash.com/photo-1615485290119-98a3204927b9?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "200g Pouch",
-        "price": 120,
-        "originalPrice": 150,
-        "weight": "200g Pouch"
-      },
-      {
-        "size": "500g Zip Lock",
-        "price": 260,
-        "originalPrice": 330,
-        "weight": "500g Zip Lock"
-      },
-      {
-        "size": "1kg Bulk Pack",
-        "price": 490,
-        "originalPrice": 620,
-        "weight": "1kg Bulk Pack"
-      }
-    ],
-    "ingredients": "100% Pure Lakadong / Salem Natural Turmeric Rhizomes.",
-    "shelfLife": "18 Months",
-    "images": [
-      "https://images.unsplash.com/photo-1615485290119-98a3204927b9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
-    ],
-    "stock": 20,
-    "tagline": ""
-  },
-  {
     "id": "spice-03",
     "name": "Coastal Fish Fry & Curry Roast Masala",
     "category": "Spices",
