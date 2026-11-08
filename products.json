@@ -378,67 +378,6 @@
     "tagline": ""
   },
   {
-    "id": "ckp-df-04",
-    "name": "CKP Fiery Kolambi (Prawn) Achaar",
-    "tagline": "Real Fried Prawns in Gingelly Oil",
-    "category": "Dry Fish",
-    "tag": "Chef's Secret &#127798;",
-    "isTopSeller": true,
-    "spiceLevel": 4,
-    "stock": 25,
-    "rating": 5,
-    "reviewsCount": 340,
-    "origin": "Heritage CKP Recipe, Coastal Alibaug",
-    "preparation": "Wild sea prawns crisp-fried in cold-pressed gingelly oil, tossed with freshly ground 14 coastal spices, whole garlic cloves, and naturally fermented coconut vinegar.",
-    "cookTips": "Ready to eat straight out of the jar! Enjoy with warm dal-rice, chapatis, or as a fiery side with fish thali.",
-    "shelfLife": "12 Months",
-    "image": "https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "250g Glass Jar",
-        "price": 340,
-        "originalPrice": 420,
-        "weight": "250g Glass Jar"
-      },
-      {
-        "size": "500g Jar",
-        "price": 620,
-        "originalPrice": 780,
-        "weight": "500g Jar"
-      }
-    ],
-    "description": "Plump prawns crisp-fried with roasted masalas, whole garlic, and aged natural coconut vinegar.",
-    "reviews": [
-      {
-        "name": "Neha Gupte",
-        "city": "Dadar, Mumbai",
-        "rating": 5,
-        "date": "2 days ago",
-        "verified": true,
-        "text": "A masterpiece! Plump fried prawns bathed in spicy gingelly oil and aromatic coastal masalas. The glass jar packing is premium. Buying 2 more jars for my relatives in US."
-      },
-      {
-        "name": "Mandar Karnik",
-        "city": "Thane",
-        "rating": 5,
-        "date": "5 days ago",
-        "verified": true,
-        "text": "Pure nostalgia. Tastes exactly like traditional CKP wedding banquet prawn pickle. Perfectly balanced sourness and spice."
-      },
-      {
-        "name": "Sangeeta Rao",
-        "city": "Bengaluru",
-        "rating": 5,
-        "date": "1 week ago",
-        "verified": true,
-        "text": "Delivered safely in bubble pack to Bangalore within 3 days. Super delicious prawn pieces in every spoon."
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1559742811-822873691df8?auto=format&fit=crop&w=800&q=80"
-    ]
-  },
-  {
     "id": "ckp-sp-01",
     "name": "CKP Royal Garam Masala (18-Spices)",
     "tagline": "Stone-Pounded Dagad Phool & Nagkesar",
