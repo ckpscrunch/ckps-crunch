@@ -523,6 +523,15 @@
         .trim();
     };
 
+    // Safe storage setter that never crashes the app on quota or private browsing limits
+    const safeSetItem = (key, val) => {
+      try {
+        localStorage.setItem(key, val);
+      } catch (e) {
+        console.warn("Storage write suppressed (quota or private mode):", key, e.message);
+      }
+    };
+
     const sanitizeContent = (obj) => {
       if (!obj || typeof obj !== "object") return obj;
       const out = {};
@@ -533,13 +542,32 @@
     };
 
     const sanitizeProducts = (arr) => {
-      if (!Array.isArray(arr)) return arr;
-      return arr.map(p => ({
-        ...p,
-        name: cleanMojibakeStr(p.name),
-        tagline: cleanMojibakeStr(p.tagline),
-        tag: cleanMojibakeStr(p.tag)
-      }));
+      if (!Array.isArray(arr)) return [];
+      return arr
+        .filter(p => p && typeof p === "object")
+        .map(p => {
+          const variants = Array.isArray(p.variants) && p.variants.length > 0
+            ? p.variants.map(v => ({
+                size: v.size || "Standard Pack",
+                price: Number(v.price) || 0,
+                originalPrice: Number(v.originalPrice) || Number(v.price) || 0,
+                weight: v.weight || v.size || "250g"
+              }))
+            : [{ size: "Standard Pack", price: Number(p.price) || 195, originalPrice: Number(p.price) || 195, weight: "250g" }];
+
+          return {
+            ...p,
+            id: String(p.id || ("ckp-" + Date.now())),
+            name: cleanMojibakeStr(p.name || "Coastal Delicacy"),
+            tagline: cleanMojibakeStr(p.tagline || ""),
+            tag: cleanMojibakeStr(p.tag || "Fresh"),
+            category: p.category || "Dry Fish",
+            stock: Number(p.stock) >= 0 ? Number(p.stock) : 50,
+            image: p.image || "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+            images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [p.image || "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"],
+            variants: variants
+          };
+        });
     };
 
     function App() {
@@ -551,7 +579,7 @@
         } catch(e) { return DEFAULT_SITE_CONTENT; }
       });
       useEffect(() => {
-        localStorage.setItem("ckp_site_content_v12", JSON.stringify(siteContent));
+        safeSetItem("ckp_site_content_v12", JSON.stringify(siteContent));
       }, [siteContent]);
 
       // Owner Live In-Place Customizers
@@ -583,7 +611,7 @@
           return s ? sanitizeProducts(JSON.parse(s)) : DEFAULT_CATALOG;
         } catch(e) { return DEFAULT_CATALOG; }
       });
-      useEffect(() => { localStorage.setItem("ckp_products_v9", JSON.stringify(products)); }, [products]);
+      useEffect(() => { safeSetItem("ckp_products_v9", JSON.stringify(products)); }, [products]);
 
       // 2. Owner Credentials & Settings (Changeable by Owner)
       const [ownerConfig, setOwnerConfig] = useState(() => {
@@ -643,7 +671,7 @@
           };
         }
       });
-      useEffect(() => { localStorage.setItem("ckp_owner_config_v6", JSON.stringify(ownerConfig)); }, [ownerConfig]);
+      useEffect(() => { safeSetItem("ckp_owner_config_v6", JSON.stringify(ownerConfig)); }, [ownerConfig]);
 
       // 3. Employees / Staff Management (Managed by Owner)
       const [employees, setEmployees] = useState(() => {
@@ -655,7 +683,7 @@
           ];
         } catch(e) { return []; }
       });
-      useEffect(() => { localStorage.setItem("ckp_employees_v7", JSON.stringify(employees)); }, [employees]);
+      useEffect(() => { safeSetItem("ckp_employees_v7", JSON.stringify(employees)); }, [employees]);
 
       // 4. Registered Customer Users
       const [registeredUsers, setRegisteredUsers] = useState(() => {
@@ -664,7 +692,7 @@
           return s ? JSON.parse(s) : {};
         } catch(e) { return {}; }
       });
-      useEffect(() => { localStorage.setItem("ckp_users_v6", JSON.stringify(registeredUsers)); }, [registeredUsers]);
+      useEffect(() => { safeSetItem("ckp_users_v6", JSON.stringify(registeredUsers)); }, [registeredUsers]);
 
       // 5. Currently Logged In User
       const [currentUser, setCurrentUser] = useState(() => {
@@ -674,7 +702,7 @@
         } catch(e) { return null; }
       });
       useEffect(() => {
-        if(currentUser) localStorage.setItem("ckp_curr_user_v6", JSON.stringify(currentUser));
+        if(currentUser) safeSetItem("ckp_curr_user_v6", JSON.stringify(currentUser));
         else localStorage.removeItem("ckp_curr_user_v6");
       }, [currentUser]);
 
@@ -685,7 +713,7 @@
           return s ? JSON.parse(s) : [];
         } catch(e) { return []; }
       });
-      useEffect(() => { localStorage.setItem("ckp_orders_v6", JSON.stringify(orders)); }, [orders]);
+      useEffect(() => { safeSetItem("ckp_orders_v6", JSON.stringify(orders)); }, [orders]);
 
       // Active Section: "All", "Dry Fish", "Spices", "Pickles"
       const [activeSection, setActiveSection] = useState("Top Sellers");
@@ -699,7 +727,7 @@
           return s ? JSON.parse(s) : [];
         } catch(e) { return []; }
       });
-      useEffect(() => { localStorage.setItem("ckp_cart_v6", JSON.stringify(cart)); }, [cart]);
+      useEffect(() => { safeSetItem("ckp_cart_v6", JSON.stringify(cart)); }, [cart]);
       const [isCartOpen, setIsCartOpen] = useState(false);
 
       // Modals
@@ -1116,55 +1144,32 @@
       const [isPublishing, setIsPublishing] = useState(false);
       const [hasUnpublishedChanges, setHasUnpublishedChanges] = useState(false);
 
-      // PRESERVATION: Recover any user-uploaded photos across all previous storage versions so nothing vanishes
+      // Startup Fetch: Synchronize latest live products & site content from GitHub
       useEffect(() => {
-        const prevVersions = ["v6", "v7", "v8", "v9", "v10"];
-        for (const v of prevVersions) {
-          try {
-            const rawContent = localStorage.getItem(`ckp_site_content_${v}`);
-            if (rawContent) {
-              const parsed = JSON.parse(rawContent);
-              setSiteContent(prev => ({ ...prev, ...parsed }));
-            }
-            const rawProds = localStorage.getItem(`ckp_products_${v}`);
-            if (rawProds) {
-              const parsedProds = JSON.parse(rawProds);
-              if (Array.isArray(parsedProds) && parsedProds.length > 0) {
-                setProducts(prev => prev.map(p => {
-                  const oldP = parsedProds.find(item => item.id === p.id);
-                  if (oldP && oldP.image && oldP.image.startsWith("data:")) {
-                    return { ...p, image: oldP.image };
-                  }
-                  return p;
-                }));
-              }
-            }
-          } catch(e) {}
-        }
-
         // Also fetch any live updates from GitHub
         fetch(`products.json?t=${Date.now()}`)
           .then(r => r.ok ? r.json() : null)
           .then(data => {
             if (data && Array.isArray(data) && data.length > 0) {
+              const sanitizedData = sanitizeProducts(data);
               setProducts(prev => {
+                const safePrev = Array.isArray(prev) ? prev : [];
                 let deletedIds = [];
                 try {
                   const dRaw = localStorage.getItem("ckp_deleted_products");
-                  deletedIds = dRaw ? JSON.parse(dRaw) : [];
+                  deletedIds = dRaw ? JSON.parse(dRaw).map(String) : [];
                 } catch(e) {}
 
-                // Keep local-only products (newly added) that aren't marked deleted
-                const localOnly = prev.filter(lp => !data.some(cp => cp.id === lp.id) && !deletedIds.includes(lp.id));
+                // Keep local products that aren't marked deleted
+                const localOnly = safePrev.filter(lp => !sanitizedData.some(cp => String(cp.id) === String(lp.id)) && !deletedIds.includes(String(lp.id)));
 
-                const mergedCloud = data
-                  .filter(cloudP => !deletedIds.includes(cloudP.id))
+                const mergedCloud = sanitizedData
+                  .filter(cloudP => !deletedIds.includes(String(cloudP.id)))
                   .map(cloudP => {
-                    const localMatch = prev.find(lp => lp.id === cloudP.id);
+                    const localMatch = safePrev.find(lp => String(lp.id) === String(cloudP.id));
                     if (!localMatch) return cloudP;
                     return {
                       ...cloudP,
-                      ...localMatch,
                       image: (localMatch.image && localMatch.image.startsWith("data:")) ? localMatch.image : (cloudP.image || localMatch.image)
                     };
                   });
@@ -7156,7 +7161,7 @@
                 UPI Auto Pay: <code className="text-amber-300">{ownerConfig.upiId}</code> • Direct Coastal Delivery Across India
               </div>
               <div className="pt-2 text-sky-500">
-                © {new Date().getFullYear()} {siteContent.storeTitle}. All rights reserved.
+                ©&copy; {new Date().getFullYear()} {siteContent.storeTitle}. All rights reserved.
               </div>
             </div>
           </footer>
@@ -7165,7 +7170,48 @@
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+        // Production Error Boundary: Guarantees website never crashes to a white screen
+    class ErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+      }
+      static getDerivedStateFromError() {
+        return { hasError: true };
+      }
+      componentDidCatch(err, info) {
+        console.error("Storefront ErrorBoundary caught error:", err, info);
+      }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="min-h-screen bg-[#FAF7F2] flex flex-col items-center justify-center p-6 text-center">
+              <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full border border-stone-200 space-y-4">
+                <span className="text-4xl">&#128031;</span>
+                <h2 className="font-brand font-black text-2xl text-stone-900">CKP's Crunch Storefront</h2>
+                <p className="text-xs text-stone-600 font-medium">
+                  We are updating the coastal inventory and authentic spice catalog.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => { try { sessionStorage.clear(); } catch(e){} window.location.reload(); }}
+                  className="w-full bg-sky-800 hover:bg-sky-900 text-white font-bold py-3 rounded-2xl text-xs shadow-md transition"
+                >
+                  &#8634; Refresh Storefront
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    );
   </script>
 </body>
 </html>
