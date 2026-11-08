@@ -720,14 +720,38 @@
       const [searchQuery, setSearchQuery] = useState("");
       const [selectedVariants, setSelectedVariants] = useState({});
 
-      // Cart
+      // Cart (Synchronized per Customer Account & Guest Session)
       const [cart, setCart] = useState(() => {
         try {
+          const savedUser = localStorage.getItem("ckp_curr_user_v6");
+          if (savedUser) {
+            const u = JSON.parse(savedUser);
+            const uid = u.mobile || u.id;
+            if (uid) {
+              const uCart = localStorage.getItem("ckp_user_cart_" + uid);
+              if (uCart) return JSON.parse(uCart);
+            }
+          }
           const s = localStorage.getItem("ckp_cart_v6");
           return s ? JSON.parse(s) : [];
         } catch(e) { return []; }
       });
-      useEffect(() => { safeSetItem("ckp_cart_v6", JSON.stringify(cart)); }, [cart]);
+      useEffect(() => {
+        safeSetItem("ckp_cart_v6", JSON.stringify(cart));
+        if (currentUser && currentUser.role === "customer") {
+          const uid = currentUser.mobile || currentUser.id;
+          if (uid) {
+            safeSetItem("ckp_user_cart_" + uid, JSON.stringify(cart));
+            setRegisteredUsers(prev => {
+              if (!prev[uid]) return prev;
+              return {
+                ...prev,
+                [uid]: { ...prev[uid], cart: cart }
+              };
+            });
+          }
+        }
+      }, [cart, currentUser]);
       const [isCartOpen, setIsCartOpen] = useState(false);
 
       // Modals
@@ -1502,40 +1526,90 @@
 
         // 2. Customer Auth
         if (isRegisterMode) {
-          if (!loginName) {
+          if (!loginName || !loginName.trim()) {
             setLoginError("Please enter your Full Name.");
             return;
           }
-          const newUser = { name: loginName, mobile: id, password: pass };
-          setRegisteredUsers(prev => ({ ...prev, [id]: newUser }));
-          setCurrentUser({ role: "customer", name: loginName, mobile: id });
+          if (id.length < 3) {
+            setLoginError("Please enter a valid Mobile Number or User ID (at least 3 characters).");
+            return;
+          }
+          if (!pass || pass.length < 3) {
+            setLoginError("Please enter a password with at least 3 characters.");
+            return;
+          }
+          if (registeredUsers[id]) {
+            setLoginError("An account with this ID/Mobile already exists. Please Sign In with your password.");
+            return;
+          }
+          const nowStr = new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+          const newUser = {
+            id: id,
+            name: loginName.trim(),
+            mobile: id,
+            password: pass,
+            registeredAt: nowStr,
+            cart: cart || []
+          };
+          setRegisteredUsers(prev => {
+            const updated = { ...prev, [id]: newUser };
+            safeSetItem("ckp_users_v6", JSON.stringify(updated));
+            return updated;
+          });
+          safeSetItem("ckp_user_cart_" + id, JSON.stringify(cart || []));
+          setCurrentUser({ role: "customer", name: newUser.name, mobile: id, id: id });
           setShowLoginModal(false);
           setLoginError("");
           setLoginId(""); setLoginPass(""); setLoginName("");
+          alert("Account created successfully! Welcome to CKP's Crunch, " + newUser.name + "!");
         } else {
           const user = registeredUsers[id];
-          if (user && user.password === pass) {
-            setCurrentUser({ role: "customer", name: user.name, mobile: user.mobile });
-            setShowLoginModal(false);
-            setLoginError("");
-            setLoginId(""); setLoginPass("");
-          } else if (!user) {
-            // Auto register on first attempt
-            const autoName = loginName || "Customer " + id.slice(-4);
-            const newUser = { name: autoName, mobile: id, password: pass };
-            setRegisteredUsers(prev => ({ ...prev, [id]: newUser }));
-            setCurrentUser({ role: "customer", name: autoName, mobile: id });
-            setShowLoginModal(false);
-            setLoginError("");
-            setLoginId(""); setLoginPass("");
-          } else {
-            setLoginError("Incorrect password. Please verify.");
+          if (!user) {
+            // Refuse login if user does not exist!
+            setLoginError("No customer account found with ID '" + id + "'. Please click 'Create New Customer Account' below to register first.");
+            return;
           }
+          if (user.password !== pass) {
+            setLoginError("Incorrect password for account '" + id + "'. Please enter your correct password.");
+            return;
+          }
+          // Login successful
+          setCurrentUser({ role: "customer", name: user.name, mobile: user.mobile || id, id: id });
+          
+          // Restore user's specific cart!
+          let restoredCart = [];
+          try {
+            const savedCart = localStorage.getItem("ckp_user_cart_" + id);
+            if (savedCart) {
+              restoredCart = JSON.parse(savedCart);
+            } else if (user.cart && Array.isArray(user.cart)) {
+              restoredCart = user.cart;
+            }
+          } catch(err) {}
+
+          if (Array.isArray(restoredCart) && restoredCart.length > 0) {
+            setCart(restoredCart);
+          } else if (cart.length > 0) {
+            safeSetItem("ckp_user_cart_" + id, JSON.stringify(cart));
+            setRegisteredUsers(prev => ({
+              ...prev,
+              [id]: { ...prev[id], cart: cart }
+            }));
+          }
+
+          setShowLoginModal(false);
+          setLoginError("");
+          setLoginId(""); setLoginPass("");
         }
       };
 
       const handleLogout = () => {
+        if (currentUser && (currentUser.mobile || currentUser.id)) {
+          const uid = currentUser.mobile || currentUser.id;
+          safeSetItem("ckp_user_cart_" + uid, JSON.stringify(cart));
+        }
         setCurrentUser(null);
+        setCart([]); // Clear active cart on logout so another person on this device does not see previous user's cart
         setIsOwnerPortalView(false);
       };
 
@@ -1655,6 +1729,14 @@
             setShowAutoPaymentGatewayModal(false);
             setOrderSuccessData(finalOrder);
             setCart([]);
+            if (currentUser && (currentUser.mobile || currentUser.id)) {
+              const uid = currentUser.mobile || currentUser.id;
+              safeSetItem("ckp_user_cart_" + uid, JSON.stringify([]));
+              setRegisteredUsers(prev => {
+                if (!prev[uid]) return prev;
+                return { ...prev, [uid]: { ...prev[uid], cart: [] } };
+              });
+            }
           }, 1500);
         }, 2200);
       };
@@ -2338,29 +2420,30 @@
                     <p className="text-xs text-stone-500 mt-1">UPI Payee: <code className="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">{ownerConfig.upiId}</code></p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 bg-stone-100 p-1.5 rounded-2xl border text-xs font-bold">
+                                    <div className="flex flex-wrap gap-2 bg-stone-100 p-1.5 rounded-2xl border text-xs font-bold">
                     <button onClick={() => setOwnerTab("orders")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "orders" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      📦 Orders ({orders.length})
+                      &#128230; Orders ({orders.length})
+                    </button>
+                    <button onClick={() => setOwnerTab("customers")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "customers" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
+                      &#128101; Customers ({Object.keys(registeredUsers).length})
                     </button>
                     <button onClick={() => setOwnerTab("delivery")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "delivery" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      🚚 Delivery Rates
+                      &#128666; Delivery Rates
                     </button>
                     <button onClick={() => setOwnerTab("stock")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "stock" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      📊 Stock ({products.length})
+                      &#128230; Stock ({products.length})
                     </button>
                     <button onClick={() => setOwnerTab("texts")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "texts" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      ✏️ Edit Website Content
+                      &#9998; Edit Website Content
                     </button>
                     <button onClick={() => setOwnerTab("employees")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "employees" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      👥 Employees ({employees.length})
+                      &#128104;&#8205;&#127859; Employees ({employees.length})
                     </button>
                     <button onClick={() => setOwnerTab("upload")} className={`px-3 py-2 rounded-xl transition ${ownerTab === "upload" ? "bg-stone-900 text-white shadow" : "text-stone-600"}`}>
-                      ✨ Upload Product
+                      &#10133; Upload Product
                     </button>
                   </div>
-                </div>
-
-                {/* 1. ORDERS TAB */}
+                </div>{/* 1. ORDERS TAB */}
                 {ownerTab === "orders" && (
                   <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
                     <div className="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
@@ -2508,6 +2591,110 @@
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 1A. REGISTERED CUSTOMER DATABASE TAB */}
+                {ownerTab === "customers" && (
+                  <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+                    <div className="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+                      <div>
+                        <h3 className="font-brand text-lg font-bold text-stone-900 flex items-center gap-2">
+                          <span>&#128101;</span> Registered Customer Database ({Object.keys(registeredUsers).length})
+                        </h3>
+                        <p className="text-xs text-stone-500">View customer IDs, passwords, active cart items, and lifetime order histories.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-amber-100 text-amber-950 font-bold px-3 py-1 rounded-full text-xs">
+                          {Object.keys(registeredUsers).length} Registered Accounts
+                        </span>
+                      </div>
+                    </div>
+
+                    {Object.keys(registeredUsers).length === 0 ? (
+                      <div className="p-8 text-center text-stone-500 text-xs bg-stone-50 rounded-2xl border border-dashed">
+                        No customer accounts registered yet. When customers register with their ID &amp; Password, they will appear here.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-stone-50 border-b font-bold text-stone-600">
+                            <tr>
+                              <th className="p-3">Customer Name</th>
+                              <th className="p-3">User ID / Mobile</th>
+                              <th className="p-3">Password</th>
+                              <th className="p-3">Registered On</th>
+                              <th className="p-3">Active Cart</th>
+                              <th className="p-3">Total Orders</th>
+                              <th className="p-3 text-center">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y text-stone-800">
+                            {Object.entries(registeredUsers).map(([userId, user]) => {
+                              const userOrders = orders.filter(o => o.phone === user.mobile || o.customerName === user.name);
+                              const userCartItems = user.cart || [];
+                              const userCartTotal = userCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+                              return (
+                                <tr key={userId} className="hover:bg-amber-50/30 transition">
+                                  <td className="p-3 font-bold text-stone-900">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-7 h-7 rounded-full bg-sky-100 text-sky-800 font-black flex items-center justify-center text-xs">
+                                        {user.name ? user.name.charAt(0).toUpperCase() : "C"}
+                                      </span>
+                                      <span>{user.name}</span>
+                                    </div>
+                                  </td>
+                                  <td className="p-3 font-mono font-semibold text-stone-700">{user.mobile || userId}</td>
+                                  <td className="p-3 font-mono text-stone-700 bg-stone-50 rounded">
+                                    <span className="bg-stone-100 border px-1.5 py-0.5 rounded text-[11px] font-bold">{user.password}</span>
+                                  </td>
+                                  <td className="p-3 text-stone-500">{user.registeredAt || "Active Account"}</td>
+                                  <td className="p-3">
+                                    {userCartItems.length > 0 ? (
+                                      <span className="bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded text-[10px]">
+                                        {userCartItems.length} item(s) (&#8377;{userCartTotal})
+                                      </span>
+                                    ) : (
+                                      <span className="text-stone-400 text-[11px]">Empty</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3">
+                                    {userOrders.length > 0 ? (
+                                      <span className="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                                        {userOrders.length} Order(s)
+                                      </span>
+                                    ) : (
+                                      <span className="text-stone-400 text-[11px]">0 Orders</span>
+                                    )}
+                                  </td>
+                                  <td className="p-3 text-center whitespace-nowrap">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (confirm("Are you sure you want to delete customer account for " + user.name + " (" + userId + ")?")) {
+                                          setRegisteredUsers(prev => {
+                                            const copy = { ...prev };
+                                            delete copy[userId];
+                                            safeSetItem("ckp_users_v6", JSON.stringify(copy));
+                                            return copy;
+                                          });
+                                          localStorage.removeItem("ckp_user_cart_" + userId);
+                                        }
+                                      }}
+                                      className="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-lg border border-red-200 transition text-[11px]"
+                                      title="Delete customer record"
+                                    >
+                                      &#128465; Delete
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
@@ -6245,7 +6432,18 @@
                 </div>
 
                 {loginError && (
-                  <p className="bg-red-50 text-red-700 p-2.5 rounded-xl text-xs font-bold border border-red-200">{loginError}</p>
+                  <div className="bg-red-50 text-red-700 p-3 rounded-2xl text-xs font-bold border border-red-200 space-y-2">
+                    <div>{loginError}</div>
+                    {!isRegisterMode && (
+                      <button
+                        type="button"
+                        onClick={() => { setIsRegisterMode(true); setLoginError(""); }}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-xl text-xs shadow transition flex items-center justify-center gap-1.5"
+                      >
+                        <span>&#10133;</span> Create New Customer Account Now
+                      </button>
+                    )}
+                  </div>
                 )}
 
                 <form onSubmit={handleUnifiedLogin} className="space-y-3.5 text-xs text-left">
