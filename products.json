@@ -604,58 +604,5 @@
     "images": [
       "https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=800&q=80"
     ]
-  },
-  {
-    "id": "ckp-pk-03",
-    "name": "Desi Lahsun & Yellow Mustard Achaar",
-    "tagline": "Peeled Country Garlic  &bull;  Immunity Booster",
-    "category": "Pickles",
-    "tag": "Garlic Punch &#129476;",
-    "isTopSeller": false,
-    "spiceLevel": 4,
-    "stock": 30,
-    "rating": 4.8,
-    "reviewsCount": 240,
-    "origin": "Maharashtra Countryside",
-    "preparation": "Crispy desi garlic pearls cured in pungent ground yellow mustard seeds, fenugreek, rock salt, and lemon juice.",
-    "cookTips": "Great with bhakri, thepla, or curd rice.",
-    "shelfLife": "12 Months",
-    "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "250g Jar",
-        "price": 215,
-        "originalPrice": 270,
-        "weight": "250g Jar"
-      },
-      {
-        "size": "500g Jar",
-        "price": 390,
-        "originalPrice": 480,
-        "weight": "500g Jar"
-      }
-    ],
-    "description": "Whole desi garlic cloves steeped in pungent yellow mustard seeds, curry leaves, and rock salt.",
-    "reviews": [
-      {
-        "name": "Mahesh Patil",
-        "city": "Navi Mumbai",
-        "rating": 5,
-        "date": "2 days ago",
-        "verified": true,
-        "text": "Peeled desi garlic cloves with whole yellow mustard seeds. Great for immunity and digestion, plus the garlic punch is unbeatable!"
-      },
-      {
-        "name": "Radhika Nair",
-        "city": "Mumbai",
-        "rating": 5,
-        "date": "5 days ago",
-        "verified": true,
-        "text": "Crunchy garlic cloves without harsh raw bite. The mustard seasoning is addictive."
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80"
-    ]
   }
 ]
