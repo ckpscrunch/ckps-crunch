@@ -248,45 +248,6 @@
     "tagline": ""
   },
   {
-    "id": "spice-03",
-    "name": "Coastal Fish Fry & Curry Roast Masala",
-    "category": "Spices",
-    "subCategory": "Seafood Blends",
-    "tag": "Must Try for Fish",
-    "spiceLevel": 4,
-    "description": "Authentic coastal blend with Byadgi chillies, coriander, fennel, black pepper, and roasted garlic. Makes restaurant-grade crispy fish rava fry and rich seafood curries.",
-    "dietary": [
-      "No Added MSG",
-      "Stone Ground",
-      "Restaurant Secret"
-    ],
-    "rating": 4.9,
-    "reviewsCount": 285,
-    "image": "https://images.unsplash.com/photo-1509358271058-acd22cc93898?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "150g Pouch",
-        "price": 130,
-        "originalPrice": 165,
-        "weight": "150g Pouch"
-      },
-      {
-        "size": "300g Jar",
-        "price": 240,
-        "originalPrice": 310,
-        "weight": "300g Jar"
-      }
-    ],
-    "ingredients": "Byadgi Chilli, Guntur Chilli, Coriander, Cumin, Mustard, Fennel, Black Pepper, Garlic powder, Triphala.",
-    "shelfLife": "9 Months",
-    "images": [
-      "https://images.unsplash.com/photo-1509358271058-acd22cc93898?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
-    ],
-    "stock": 19,
-    "tagline": ""
-  },
-  {
     "id": "spice-04",
     "name": "Pampore Grade-A Kashmiri Mongra Saffron (Kesar)",
     "category": "Spices",
