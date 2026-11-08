@@ -6920,11 +6920,11 @@
                       if (editingImageModal.key.startsWith("product_add:")) {
                         const pid = editingImageModal.key.replace("product_add:", "");
                         setProducts(prev => prev.map(p => {
-                          if (p.id === pid) {
+                          if (String(p.id) === String(pid)) {
                             const cur = p.images && p.images.length > 0 ? [...p.images] : [p.image];
                             const updated = { ...p, images: [...cur, url] };
-                            if (activeProductDetail && activeProductDetail.id === pid) setActiveProductDetail(updated);
-                            if (quickViewProduct && quickViewProduct.id === pid) setQuickViewProduct(updated);
+                            if (activeProductDetail && String(activeProductDetail.id) === String(pid)) setActiveProductDetail(updated);
+                            if (quickViewProduct && String(quickViewProduct.id) === String(pid)) setQuickViewProduct(updated);
                             return updated;
                           }
                           return p;
@@ -6933,7 +6933,7 @@
                       } else if (editingImageModal.key.startsWith("product:")) {
                         const pid = editingImageModal.key.replace("product:", "");
                         setProducts(prev => prev.map(p => {
-                          if (p.id === pid) {
+                          if (String(p.id) === String(pid)) {
                             const cur = p.images && p.images.length > 0 ? [...p.images] : [p.image];
                             if (cur.length > 0) {
                               cur[activeImageIdx || 0] = url;
@@ -6941,8 +6941,8 @@
                               cur.push(url);
                             }
                             const updated = { ...p, image: ((activeImageIdx === 0 || !p.image) ? url : p.image), images: cur };
-                            if (activeProductDetail && activeProductDetail.id === pid) setActiveProductDetail(updated);
-                            if (quickViewProduct && quickViewProduct.id === pid) setQuickViewProduct(updated);
+                            if (activeProductDetail && String(activeProductDetail.id) === String(pid)) setActiveProductDetail(updated);
+                            if (quickViewProduct && String(quickViewProduct.id) === String(pid)) setQuickViewProduct(updated);
                             return updated;
                           }
                           return p;
