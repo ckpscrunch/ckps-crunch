@@ -378,59 +378,6 @@
     "tagline": ""
   },
   {
-    "id": "ckp-df-03",
-    "name": "Authentic Sun-Dried Jawla / Karandi",
-    "tagline": "High Calcium  &bull;  Rich Konkani Flavor",
-    "category": "Dry Fish",
-    "tag": "Traditional &#127754;",
-    "isTopSeller": false,
-    "spiceLevel": 2,
-    "stock": 35,
-    "rating": 4.8,
-    "reviewsCount": 210,
-    "origin": "Revdanda Coastal Belt, Maharashtra",
-    "preparation": "Finest tiny micro-shrimps hand-sieved and sun-cured naturally on clean coastal mats.",
-    "cookTips": "Add to egg bhurji, brinjal (vangi) curry, or dry roast with garlic and red chilli for crunchy chutney.",
-    "shelfLife": "6 Months",
-    "image": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "250g Pack",
-        "price": 175,
-        "originalPrice": 220,
-        "weight": "250g Pack"
-      },
-      {
-        "size": "500g Pack",
-        "price": 330,
-        "originalPrice": 420,
-        "weight": "500g Pack"
-      }
-    ],
-    "description": "Tiny micro-shrimps sun-cured naturally. CKP kitchen must-have for Jawla Vangi curry.",
-    "reviews": [
-      {
-        "name": "Shrikant Koli",
-        "city": "Alibaug",
-        "rating": 5,
-        "date": "3 days ago",
-        "verified": true,
-        "text": "Being a coastal local, I am very picky about Jawla. CKP's Crunch jawla is clean, micro-sized, and smells fresh from the sea. Jawla Vangi curry turned out 10/10."
-      },
-      {
-        "name": "Meera Chitnis",
-        "city": "Borivali, Mumbai",
-        "rating": 5,
-        "date": "6 days ago",
-        "verified": true,
-        "text": "Zero sand, crispy texture. Perfect for quick dry fish kismoor with hot dal rice."
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80"
-    ]
-  },
-  {
     "id": "ckp-df-04",
     "name": "CKP Fiery Kolambi (Prawn) Achaar",
     "tagline": "Real Fried Prawns in Gingelly Oil",
