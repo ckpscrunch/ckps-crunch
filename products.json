@@ -378,67 +378,6 @@
     "tagline": ""
   },
   {
-    "id": "ckp-df-01",
-    "name": "Crispy Cleaned Sukha Bombil",
-    "tagline": "Sun-Dried Konkan Gold  &bull;  Zero Sand",
-    "category": "Dry Fish",
-    "tag": "Bestseller &#128031;",
-    "isTopSeller": true,
-    "spiceLevel": 2,
-    "stock": 45,
-    "rating": 5,
-    "reviewsCount": 380,
-    "origin": "Alibaug & Murud Coastline, Maharashtra",
-    "preparation": "Sea-washed Bombay duck gutted, salted lightly, and hung on traditional coastal bamboo racks under intense Konkan sun.",
-    "cookTips": "Shallow fry in groundnut oil with a pinch of turmeric and rava (semolina) coat for 3-4 mins until golden-brown and extra crispy.",
-    "shelfLife": "8 Months (Keep in airtight container away from moisture)",
-    "image": "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "250g Pack",
-        "price": 195,
-        "originalPrice": 250,
-        "weight": "250g Pack"
-      },
-      {
-        "size": "500g Value Pack",
-        "price": 370,
-        "originalPrice": 470,
-        "weight": "500g Value Pack"
-      }
-    ],
-    "description": "Fresh coastal Bombay Duck gutted, salted, and bamboo sun-dried. Fries up crispier than wafers with zero sand grit!",
-    "reviews": [
-      {
-        "name": "Mrunal Joshi",
-        "city": "Thane West",
-        "rating": 5,
-        "date": "2 days ago",
-        "verified": true,
-        "text": "Ekdum authentic Alibaug style Sukha Bombil! Zero sand particles, perfectly cleaned and completely sun-dried. We made crispy tawa fry with rava coat for Sunday lunch, tasted better than coastal seafood restaurants!"
-      },
-      {
-        "name": "Sanket Patil",
-        "city": "Dadar, Mumbai",
-        "rating": 5,
-        "date": "5 days ago",
-        "verified": true,
-        "text": "Been looking for clean dry bombil in Mumbai for months. Most market sellers have sandy fish, but CKP's Crunch quality is outstanding. Crunchy, fresh sea aroma, no excessive salt."
-      },
-      {
-        "name": "Anuradha Pradhan",
-        "city": "Kothrud, Pune",
-        "rating": 5,
-        "date": "1 week ago",
-        "verified": true,
-        "text": "Reminded me of childhood summer vacations at my Aaji's home in Konkan. Packaged in airtight moisture-lock zip bag. Highly recommended for all CKP seafood lovers!"
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
-    ]
-  },
-  {
     "id": "ckp-df-02",
     "name": "Wild Sun-Dried Baby Kolambi (Prawns)",
     "tagline": "Cleaned Shells  &bull;  Sweet Umami Crunch",
