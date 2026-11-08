@@ -606,59 +606,6 @@
     ]
   },
   {
-    "id": "ckp-pk-02",
-    "name": "Stuffed Banarasi Bharwa Lal Mirch",
-    "tagline": "Whole Red Chillies  &bull;  12-Spice Roasted Mix",
-    "category": "Pickles",
-    "tag": "Winter Heritage &#128293;",
-    "isTopSeller": false,
-    "spiceLevel": 4,
-    "stock": 28,
-    "rating": 4.9,
-    "reviewsCount": 310,
-    "origin": "Traditional Heritage Kitchens",
-    "preparation": "Large winter red chillies hand-deseeded, stuffed tightly with roasted saunf, rai, amchur, and kalonji, steeped in cold-pressed mustard oil.",
-    "cookTips": "Enjoy with warm parathas, khichdi, or mathri.",
-    "shelfLife": "12 Months",
-    "image": "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "300g Jar",
-        "price": 245,
-        "originalPrice": 300,
-        "weight": "300g Jar"
-      },
-      {
-        "size": "500g Jar",
-        "price": 390,
-        "originalPrice": 490,
-        "weight": "500g Jar"
-      }
-    ],
-    "description": "Plump winter red chillies stuffed with amchur, saunf, and mustard, aged in virgin mustard oil.",
-    "reviews": [
-      {
-        "name": "Sanjay Verma",
-        "city": "Mumbai",
-        "rating": 5,
-        "date": "3 days ago",
-        "verified": true,
-        "text": "Stuffed generously with roasted fennel, amchur, and mustard. Tangy, spicy, and perfectly cured in mustard oil. Goes amazingly with parathas."
-      },
-      {
-        "name": "Preeti Agarwal",
-        "city": "Thane",
-        "rating": 5,
-        "date": "1 week ago",
-        "verified": true,
-        "text": "Large plump red chillies. The spice filling is moist and aromatic. Excellent packaging."
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1596797038530-2c107229654b?auto=format&fit=crop&w=800&q=80"
-    ]
-  },
-  {
     "id": "ckp-pk-03",
     "name": "Desi Lahsun & Yellow Mustard Achaar",
     "tagline": "Peeled Country Garlic  &bull;  Immunity Booster",
