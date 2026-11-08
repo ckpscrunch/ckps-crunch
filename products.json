@@ -378,67 +378,6 @@
     "tagline": ""
   },
   {
-    "id": "ckp-df-02",
-    "name": "Wild Sun-Dried Baby Kolambi (Prawns)",
-    "tagline": "Cleaned Shells  &bull;  Sweet Umami Crunch",
-    "category": "Dry Fish",
-    "tag": "Coastal Special &#129424;",
-    "isTopSeller": true,
-    "spiceLevel": 2,
-    "stock": 30,
-    "rating": 4.9,
-    "reviewsCount": 290,
-    "origin": "Ratnagiri Harbor, Konkan Coast",
-    "preparation": "Fresh micro sea prawns cured naturally under direct coastal sunlight with clean sea breeze.",
-    "cookTips": "Saute with chopped onions, green chillies, and fresh grated coconut for traditional Kolambi Kismoor or spicy tawa fry.",
-    "shelfLife": "6 Months",
-    "image": "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "200g Pouch",
-        "price": 230,
-        "originalPrice": 290,
-        "weight": "200g Pouch"
-      },
-      {
-        "size": "500g Pack",
-        "price": 540,
-        "originalPrice": 680,
-        "weight": "500g Pack"
-      }
-    ],
-    "description": "Fresh caught sea prawns dried naturally under the Konkan sun. Ideal for kismoor and spicy tawa fry.",
-    "reviews": [
-      {
-        "name": "Rohit Sawant",
-        "city": "Vashi, Navi Mumbai",
-        "rating": 5,
-        "date": "1 day ago",
-        "verified": true,
-        "text": "The sweetest dry baby prawns! Cleaned shells, zero sand, fried with chopped onions and green chillies for Kolambi Kismoor. Incredible umami flavor!"
-      },
-      {
-        "name": "Kavita Deshpande",
-        "city": "Dombivli",
-        "rating": 5,
-        "date": "4 days ago",
-        "verified": true,
-        "text": "Super fresh, high quality dried prawns. Crunchy and golden. My family finished the entire 200g pouch in two meals!"
-      },
-      {
-        "name": "Amit Vaidya",
-        "city": "Girgaon, Mumbai",
-        "rating": 5,
-        "date": "1 week ago",
-        "verified": true,
-        "text": "Authentic coastal quality. No chemical smell at all. Pure Konkan sun-dried goodness."
-      }
-    ],
-    "images": [
-      "https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?auto=format&fit=crop&w=800&q=80"
-    ]
-  },
-  {
     "id": "ckp-df-03",
     "name": "Authentic Sun-Dried Jawla / Karandi",
     "tagline": "High Calcium  &bull;  Rich Konkani Flavor",
