@@ -1349,13 +1349,13 @@
 
       const handleMoveProductToPosition = (productId, currentVisibleIdx) => {
         const targetPosStr = prompt(
-          Move this delicacy to which position? (1 to ):,
+          "Move this delicacy to which position? (1 to " + filteredProducts.length + "):",
           String(currentVisibleIdx + 1)
         );
         if (!targetPosStr) return;
         const targetPos = parseInt(targetPosStr.trim(), 10);
         if (isNaN(targetPos) || targetPos < 1 || targetPos > filteredProducts.length) {
-          alert(Please enter a valid position between 1 and );
+          alert("Please enter a valid position between 1 and " + filteredProducts.length);
           return;
         }
         const targetProduct = filteredProducts[targetPos - 1];
@@ -2006,7 +2006,7 @@
           description: ""
         });
 
-        alert("" added with  pack size(s) successfully! Click 'Publish Live to Customers' in the top bar to synchronize across all customer devices.);
+        alert(`"${newP.name}" added with ${cleanedVariants.length} pack size(s) successfully! Click 'Publish Live to Customers' in the top bar to synchronize across all customer devices.`);
         setOwnerTab("stock");
       };
 
