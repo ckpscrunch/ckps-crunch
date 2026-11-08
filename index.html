@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -576,11 +576,11 @@
       // 1. Products
       const [products, setProducts] = useState(() => {
         try {
-          const s = localStorage.getItem("ckp_products_v8");
+          const s = localStorage.getItem("ckp_products_v9");
           return s ? sanitizeProducts(JSON.parse(s)) : DEFAULT_CATALOG;
         } catch(e) { return DEFAULT_CATALOG; }
       });
-      useEffect(() => { localStorage.setItem("ckp_products_v8", JSON.stringify(products)); }, [products]);
+      useEffect(() => { localStorage.setItem("ckp_products_v9", JSON.stringify(products)); }, [products]);
 
       // 2. Owner Credentials & Settings (Changeable by Owner)
       const [ownerConfig, setOwnerConfig] = useState(() => {
@@ -760,6 +760,49 @@
 
         setHasUnpublishedChanges(true);
         alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
+      };
+
+      // Owner Handlers to Delete Past Transactions & Order History
+      const handleDeleteOrder = (orderId) => {
+        if (!isEditor) return;
+        if (confirm(`Are you sure you want to delete order transaction #${orderId} from order history? This cannot be undone.`)) {
+          setOrders(prev => prev.filter(o => o.orderId !== orderId));
+          if (trackedOrder && trackedOrder.orderId === orderId) {
+            setTrackedOrder(null);
+          }
+          if (orderSuccessData && orderSuccessData.orderId === orderId) {
+            setOrderSuccessData(null);
+          }
+          setHasUnpublishedChanges(true);
+        }
+      };
+
+      const handleClearCancelledOrders = () => {
+        if (!isEditor) return;
+        const count = orders.filter(o => o.status === "Cancelled by Customer").length;
+        if (count === 0) {
+          alert("There are no cancelled orders to remove.");
+          return;
+        }
+        if (confirm(`Delete all ${count} cancelled order transactions from history?`)) {
+          setOrders(prev => prev.filter(o => o.status !== "Cancelled by Customer"));
+          setHasUnpublishedChanges(true);
+        }
+      };
+
+      const handleClearAllOrders = () => {
+        if (!isEditor) return;
+        if (orders.length === 0) {
+          alert("Order history is already empty.");
+          return;
+        }
+        if (confirm(`Are you sure you want to delete ALL ${orders.length} past order transactions? This will permanently clear the store order history.`)) {
+          setOrders([]);
+          setTrackedOrder(null);
+          setOrderSuccessData(null);
+          setHasUnpublishedChanges(true);
+          alert("All past transactions have been cleared from order history.");
+        }
       };
 
       // Helper to parse weight in grams from size/weight string accurately
@@ -1085,13 +1128,27 @@
           .then(data => {
             if (data && Array.isArray(data) && data.length > 0) {
               setProducts(prev => {
-                return data.map(cloudP => {
-                  const localMatch = prev.find(lp => lp.id === cloudP.id);
-                  if (localMatch && localMatch.image && localMatch.image.startsWith("data:")) {
-                    return { ...cloudP, image: localMatch.image };
-                  }
-                  return cloudP;
-                });
+                let deletedIds = [];
+                try {
+                  const dRaw = localStorage.getItem("ckp_deleted_products");
+                  deletedIds = dRaw ? JSON.parse(dRaw) : [];
+                } catch(e) {}
+
+                // Keep local-only products (newly added) that aren't marked deleted
+                const localOnly = prev.filter(lp => !data.some(cp => cp.id === lp.id) && !deletedIds.includes(lp.id));
+
+                const mergedCloud = data
+                  .filter(cloudP => !deletedIds.includes(cloudP.id))
+                  .map(cloudP => {
+                    const localMatch = prev.find(lp => lp.id === cloudP.id);
+                    if (!localMatch) return cloudP;
+                    return {
+                      ...cloudP,
+                      ...localMatch,
+                      image: (localMatch.image && localMatch.image.startsWith("data:")) ? localMatch.image : (cloudP.image || localMatch.image)
+                    };
+                  });
+                return [...mergedCloud, ...localOnly];
               });
             }
           })
@@ -1157,6 +1214,7 @@
           // 2. Commit site-content.json to GitHub
           await commitFile("site-content.json", JSON.stringify(siteContent, null, 2), "Live Store Update: Website Content, Images & Taglines");
 
+          localStorage.removeItem("ckp_deleted_products");
           setHasUnpublishedChanges(false);
           if (window.confetti) {
             window.confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
@@ -1557,6 +1615,73 @@
         setEmployees(prev => prev.map(e => e.id === id ? { ...e, status: e.status === "Active" ? "On Leave" : "Active" } : e));
       };
 
+      // Delete product from store inventory with confirmation & cloud sync tracking
+      const deleteProduct = (id) => {
+        const target = products.find(p => p.id === id);
+        const name = target ? target.name : "this product";
+        if (confirm(`Are you sure you want to delete "${name}" from your store inventory? This will remove it from the home screen, product catalog, and search.`)) {
+          // 1. Remove from local products state
+          setProducts(prev => prev.filter(p => p.id !== id));
+          // 2. Track in deleted IDs so cloud fetch never resurrects it
+          try {
+            const raw = localStorage.getItem("ckp_deleted_products");
+            const arr = raw ? JSON.parse(raw) : [];
+            if (!arr.includes(id)) {
+              arr.push(id);
+              localStorage.setItem("ckp_deleted_products", JSON.stringify(arr));
+            }
+          } catch(e) {}
+          // 3. Clear any active detail / quick view
+          if (activeProductDetail && activeProductDetail.id === id) {
+            setActiveProductDetail(null);
+            setViewMode("store");
+          }
+          if (quickViewProduct && quickViewProduct.id === id) {
+            setQuickViewProduct(null);
+          }
+          setHasUnpublishedChanges(true);
+          alert(`"${name}" has been deleted from inventory. Click "Save & Publish Live to Cloud" in the Stock tab to synchronize with GitHub.`);
+        }
+      };
+
+      // Real-time synchronization for Product Name changes in Inventory Management
+      const handleUpdateProductName = (id, newName) => {
+        setProducts(prev => prev.map(p => {
+          if (p.id === id) {
+            const updated = { ...p, name: newName };
+            if (activeProductDetail && activeProductDetail.id === id) {
+              setActiveProductDetail(prevDetail => ({ ...prevDetail, name: newName }));
+            }
+            if (quickViewProduct && quickViewProduct.id === id) {
+              setQuickViewProduct(prevQuick => ({ ...prevQuick, name: newName }));
+            }
+            return updated;
+          }
+          return p;
+        }));
+        // Synchronize siteContent so product page title always matches 100%
+        setSiteContent(prev => ({ ...prev, [`${id}_name`]: newName }));
+        setHasUnpublishedChanges(true);
+      };
+
+      // Real-time synchronization for other product fields in Inventory Management
+      const handleUpdateProductInStock = (id, field, value) => {
+        setProducts(prev => prev.map(p => {
+          if (p.id === id) {
+            const updated = { ...p, [field]: value };
+            if (activeProductDetail && activeProductDetail.id === id) {
+              setActiveProductDetail(prevDetail => ({ ...prevDetail, [field]: value }));
+            }
+            if (quickViewProduct && quickViewProduct.id === id) {
+              setQuickViewProduct(prevQuick => ({ ...prevQuick, [field]: value }));
+            }
+            return updated;
+          }
+          return p;
+        }));
+        setHasUnpublishedChanges(true);
+      };
+
       const deleteEmp = (id) => {
         // ABSOLUTE PROTECTION: Owner cannot be deleted by anyone
         if (id.toLowerCase() === ownerConfig.id.toLowerCase()) {
@@ -1703,7 +1828,8 @@
           description: productForm.description
         };
         setProducts(prev => [newP, ...prev]);
-        alert("Product added successfully!");
+        setHasUnpublishedChanges(true);
+        alert("Product added successfully! Click 'Save & Publish Live to Cloud' in the Stock tab to synchronize with GitHub.");
         setOwnerTab("stock");
       };
 
@@ -1961,6 +2087,16 @@
                     const nextVal = e.target.value;
                     setCanvaBar({ ...canvaBar, value: nextVal });
                     setSiteContent(prev => ({ ...prev, [canvaBar.key]: nextVal }));
+                    if (canvaBar.key && canvaBar.key.endsWith("_name")) {
+                      const pid = canvaBar.key.replace(/_name$/, "");
+                      setProducts(prev => prev.map(p => p.id === pid ? { ...p, name: nextVal } : p));
+                      if (activeProductDetail && activeProductDetail.id === pid) {
+                        setActiveProductDetail(prev => ({ ...prev, name: nextVal }));
+                      }
+                      if (quickViewProduct && quickViewProduct.id === pid) {
+                        setQuickViewProduct(prev => ({ ...prev, name: nextVal }));
+                      }
+                    }
                     setHasUnpublishedChanges(true);
                   }}
                   className="w-full bg-stone-950 border border-stone-700 focus:border-amber-400 rounded-2xl p-3 text-xs text-amber-100 font-medium focus:outline-none"
@@ -2052,10 +2188,12 @@
                   <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
                     <div className="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
                       <div>
-                        <h3 className="font-brand text-lg font-bold text-stone-900">Customer Orders &amp; Delivery Status</h3>
-                        <p className="text-xs text-stone-500">Live order cancellations and real-time updates from customers.</p>
+                        <h3 className="font-brand text-lg font-bold text-stone-900 flex items-center gap-2">
+                          <span>&#128230;</span> Customer Orders &amp; Transaction History ({orders.length})
+                        </h3>
+                        <p className="text-xs text-stone-500">View real-time customer orders, cancellations, UTR payment references, and delete past transactions as needed.</p>
                       </div>
-                      <div className="flex gap-1.5 text-xs">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs">
                         <button
                           type="button"
                           onClick={() => setOrderFilterTab("all")}
@@ -2077,6 +2215,28 @@
                         >
                           Cancelled ({orders.filter(o => o.status === "Cancelled by Customer").length})
                         </button>
+
+                        {orders.some(o => o.status === "Cancelled by Customer") && (
+                          <button
+                            type="button"
+                            onClick={handleClearCancelledOrders}
+                            className="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-lg border border-red-200 transition text-[11px] flex items-center gap-1 shadow-xs ml-1"
+                            title="Delete all cancelled order transactions"
+                          >
+                            <span>&#128465;</span> Clear Cancelled
+                          </button>
+                        )}
+
+                        {orders.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleClearAllOrders}
+                            className="bg-stone-100 hover:bg-red-50 text-stone-700 hover:text-red-700 font-bold px-2.5 py-1 rounded-lg border transition text-[11px] flex items-center gap-1 shadow-xs"
+                            title="Delete all past orders and reset transaction history"
+                          >
+                            <span>&#128465;</span> Delete All History
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -2106,9 +2266,17 @@
                                     ? "bg-red-100 text-red-900 border border-red-300"
                                     : "bg-emerald-100 text-emerald-900"
                                 }`}>
-                                  {order.status === "Cancelled by Customer" ? "❌ Cancelled by Customer" : order.status}
+                                  {order.status === "Cancelled by Customer" ? "Cancelled by Customer" : order.status}
                                 </span>
-                                <span className="text-base font-black text-stone-900">₹{order.total}</span>
+                                <span className="text-base font-black text-stone-900">&#8377;{order.total}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOrder(order.orderId)}
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-900 border border-red-200 px-2.5 py-1 rounded-lg font-bold text-[11px] transition inline-flex items-center gap-1 shadow-xs ml-1"
+                                  title="Delete this order transaction from history"
+                                >
+                                  <span>&#128465;</span> Delete
+                                </button>
                               </div>
                             </div>
 
@@ -2274,7 +2442,36 @@
                 {/* 2. LIVE STOCK TAB */}
                 {ownerTab === "stock" && (
                   <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
-                    <h3 className="font-brand text-lg font-bold text-stone-900 border-b pb-3">Stock & Inventory Manager</h3>
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+                      <div>
+                        <h3 className="font-brand text-lg font-bold text-stone-900 flex items-center gap-2">
+                        <h3 className="font-brand text-lg font-bold text-stone-900 flex items-center gap-2"><span>&#128202;</span> Stock &amp; Inventory Manager ({products.length} Delicacies)</h3>
+                        </h3>
+                        <p className="text-xs text-stone-500">Edit titles, badges, stock, change photos, or delete products. Title edits immediately reflect on home screen and product page.</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOwnerTab("upload")}
+                          className="bg-stone-900 hover:bg-stone-800 text-amber-300 font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition"
+                        >
+                          <span>&#10133;</span> Upload New Delicacy
+                        </button>
+                        <button
+                          type="button"
+                          onClick={publishLiveToCloud}
+                          disabled={isPublishing}
+                          className={`font-bold px-4 py-1.5 rounded-xl text-xs shadow flex items-center gap-1.5 transition ${
+                            hasUnpublishedChanges
+                              ? "bg-amber-600 hover:bg-amber-500 text-white animate-pulse"
+                              : "bg-emerald-700 hover:bg-emerald-600 text-white"
+                          }`}
+                        >
+                          <span>&#128190;</span> {isPublishing ? "Publishing..." : hasUnpublishedChanges ? "Save &amp; Publish Live to Cloud" : "Cloud Synchronized &#10003;"}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-stone-50 border-b font-bold text-stone-600">
@@ -2284,6 +2481,7 @@
                             <th className="p-3">Price</th>
                             <th className="p-3">Live Stock Units</th>
                             <th className="p-3">Status</th>
+                            <th className="p-3 text-center">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y text-stone-800">
@@ -2298,7 +2496,7 @@
                                     className="absolute inset-0 bg-black/60 rounded-lg text-white text-[9px] font-bold flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition shadow"
                                     title="Click to Change Photo"
                                   >
-                                    📷 Change
+                                    &#128247; Change
                                   </button>
                                 </div>
                                 <div className="space-y-1 w-full max-w-xs">
@@ -2306,20 +2504,14 @@
                                     <input
                                       type="text"
                                       value={p.name}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, name: val } : item));
-                                      }}
-                                      className="font-bold text-stone-900 border rounded px-1.5 py-0.5 flex-1 bg-white text-xs"
-                                      title="Edit Product Title"
+                                      onChange={(e) => handleUpdateProductName(p.id, e.target.value)}
+                                      className="font-bold text-stone-900 border rounded px-1.5 py-0.5 flex-1 bg-white text-xs focus:ring-1 focus:ring-amber-500"
+                                      title="Edit Product Title (Updates on Home Screen & Product Page)"
                                     />
                                     <input
                                       type="text"
                                       value={p.tag}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setProducts(prev => prev.map(item => item.id === p.id ? { ...item, tag: val } : item));
-                                      }}
+                                      onChange={(e) => handleUpdateProductInStock(p.id, "tag", e.target.value)}
                                       className="text-[10px] border rounded px-1.5 py-0.5 w-28 bg-amber-50 font-bold text-amber-900 text-center"
                                       title="Edit Product Badge / Emoji Tag"
                                     />
@@ -2327,10 +2519,7 @@
                                   <input
                                     type="text"
                                     value={p.tagline}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setProducts(prev => prev.map(item => item.id === p.id ? { ...item, tagline: val } : item));
-                                    }}
+                                    onChange={(e) => handleUpdateProductInStock(p.id, "tagline", e.target.value)}
                                     className="text-[10px] text-stone-600 border rounded px-1.5 py-0.5 w-full bg-stone-50"
                                     placeholder="Enter tagline..."
                                     title="Edit Product Tagline"
@@ -2338,7 +2527,7 @@
                                 </div>
                               </td>
                               <td className="p-3 font-semibold">{p.category}</td>
-                              <td className="p-3 font-bold">₹{p.variants[0]?.price}</td>
+                              <td className="p-3 font-bold">&#8377;{p.variants[0]?.price}</td>
                               <td className="p-3">
                                 <input
                                   type="number"
@@ -2357,10 +2546,32 @@
                                   <span className="bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded text-[10px]">Sold Out</span>
                                 )}
                               </td>
+                              <td className="p-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => deleteProduct(p.id)}
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 hover:text-red-900 font-bold px-2.5 py-1.5 rounded-xl border border-red-200 transition text-xs inline-flex items-center gap-1 shadow-xs"
+                                  title="Delete this delicacy from store catalog"
+                                >
+                                  <span>&#128465;</span> Delete
+                                </button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-3 border-t text-xs">
+                      <span className="text-stone-500 font-medium">Total Products: {products.length}</span>
+                      <button
+                        type="button"
+                        onClick={publishLiveToCloud}
+                        disabled={isPublishing}
+                        className="bg-stone-900 hover:bg-stone-800 text-white font-bold px-4 py-2 rounded-xl shadow flex items-center gap-1.5 transition"
+                      >
+                        <span>&#128190;</span> Save All Inventory Changes to GitHub Live
+                      </button>
                     </div>
                   </div>
                 )}
@@ -2542,14 +2753,38 @@
                         </div>
                       </div>
 
-                      <div>
-                        <label className="block font-bold text-stone-700 mb-1">Image URL</label>
-                        <input
-                          type="text"
-                          value={productForm.image}
-                          onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                          className="w-full border rounded-xl px-3 py-2"
-                        />
+                      <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 space-y-2">
+                        <label className="block font-bold text-stone-800 text-xs flex items-center gap-1.5">
+                          <span>&#128247;</span> Product Photo (Upload from Device or Paste URL)
+                        </label>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files && e.target.files[0];
+                              if (file) {
+                                compressImageFile(file, (dataUrl) => {
+                                  setProductForm(prev => ({ ...prev, image: dataUrl }));
+                                });
+                              }
+                            }}
+                            className="text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={productForm.image}
+                            onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                            placeholder="Or paste image URL (https://...)"
+                            className="flex-1 border rounded-xl px-3 py-1.5 text-xs bg-white"
+                          />
+                        </div>
+                        {productForm.image && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <img src={productForm.image} className="w-12 h-12 rounded-lg object-cover border" alt="Preview" />
+                            <span className="text-[11px] font-semibold text-emerald-800">Photo compressed and ready &#10003;</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-2 flex justify-end">
@@ -3225,6 +3460,29 @@
                           >
                             <span>&#8592; Back to Storefront Catalog</span>
                           </button>
+
+                          {isOwner && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsOwnerPortalView(true);
+                                  setOwnerTab("stock");
+                                  setViewMode("store");
+                                }}
+                                className="bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold px-3 py-1.5 rounded-xl text-xs transition border flex items-center gap-1"
+                              >
+                                <span>&#128202;</span> Inventory
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteProduct(p.id)}
+                                className="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded-xl text-xs transition border border-red-200 flex items-center gap-1"
+                              >
+                                <span>&#128465;</span> Delete Product
+                              </button>
+                            </div>
+                          )}
 
                           <div className="flex items-center gap-2 text-xs font-semibold text-stone-500">
                             <span className="cursor-pointer hover:text-stone-900" onClick={backToStore}>Home</span>
@@ -6459,13 +6717,11 @@
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
-                      const file = e.target.files[0];
+                      const file = e.target.files && e.target.files[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                          setEditingImageModal(prev => ({ ...prev, currentUrl: ev.target.result }));
-                        };
-                        reader.readAsDataURL(file);
+                        compressImageFile(file, (compressedDataUrl) => {
+                          setEditingImageModal(prev => ({ ...prev, currentUrl: compressedDataUrl }));
+                        });
                       }
                     }}
                     className="w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-white hover:file:bg-amber-700 cursor-pointer"
@@ -6530,6 +6786,7 @@
                         setHasUnpublishedChanges(true);
                       } else {
                         setSiteContent(prev => ({ ...prev, [editingImageModal.key]: url }));
+                        setHasUnpublishedChanges(true);
                       }
                       setEditingImageModal(null);
                     }}
