@@ -1287,7 +1287,7 @@
       // Profile edit form
       const [profileForm, setProfileForm] = useState({ id: "", password: "", name: "" });
 
-      // Product Upload Form
+      // Product Upload Form (Supports multiple pack sizes & prices)
       const [productForm, setProductForm] = useState({
         id: "",
         name: "",
@@ -1297,11 +1297,87 @@
         spiceLevel: 2,
         stock: 30,
         image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
-        size1: "250g Pack",
-        price1: 195,
-        orig1: 250,
+        variants: [
+          { size: "250g Pack", weight: "250g", price: 195, originalPrice: 250 }
+        ],
         description: ""
       });
+
+      // Drag-and-Drop & Position Shift State & Handlers
+      const [draggedProductId, setDraggedProductId] = useState(null);
+      const [dragOverProductId, setDragOverProductId] = useState(null);
+
+      const handleReorderProducts = (sourceId, targetId) => {
+        if (!sourceId || !targetId || sourceId === targetId) return;
+        setProducts(prev => {
+          const list = [...prev];
+          const sourceIdx = list.findIndex(p => p.id === sourceId);
+          if (sourceIdx === -1) return prev;
+          const [movedItem] = list.splice(sourceIdx, 1);
+          const newTargetIdx = list.findIndex(p => p.id === targetId);
+          if (newTargetIdx === -1) return prev;
+          list.splice(newTargetIdx, 0, movedItem);
+          safeSetItem("ckp_products_catalog", JSON.stringify(list));
+          return list;
+        });
+        setHasUnpublishedChanges(true);
+      };
+
+      const handleShiftProduct = (productId, direction) => {
+        setProducts(prev => {
+          const visibleList = filteredProducts;
+          const vIdx = visibleList.findIndex(p => p.id === productId);
+          const targetVIdx = vIdx + direction;
+          if (vIdx === -1 || targetVIdx < 0 || targetVIdx >= visibleList.length) return prev;
+          const targetProduct = visibleList[targetVIdx];
+          const list = [...prev];
+          const sourceIdx = list.findIndex(p => p.id === productId);
+          if (sourceIdx === -1) return prev;
+          const [movedItem] = list.splice(sourceIdx, 1);
+          const newTargetIdx = list.findIndex(p => p.id === targetProduct.id);
+          if (newTargetIdx === -1) return prev;
+          if (direction > 0) {
+            list.splice(newTargetIdx + 1, 0, movedItem);
+          } else {
+            list.splice(newTargetIdx, 0, movedItem);
+          }
+          safeSetItem("ckp_products_catalog", JSON.stringify(list));
+          return list;
+        });
+        setHasUnpublishedChanges(true);
+      };
+
+      const handleMoveProductToPosition = (productId, currentVisibleIdx) => {
+        const targetPosStr = prompt(
+          Move this delicacy to which position? (1 to ):,
+          String(currentVisibleIdx + 1)
+        );
+        if (!targetPosStr) return;
+        const targetPos = parseInt(targetPosStr.trim(), 10);
+        if (isNaN(targetPos) || targetPos < 1 || targetPos > filteredProducts.length) {
+          alert(Please enter a valid position between 1 and );
+          return;
+        }
+        const targetProduct = filteredProducts[targetPos - 1];
+        if (!targetProduct || targetProduct.id === productId) return;
+
+        setProducts(prev => {
+          const list = [...prev];
+          const sourceIdx = list.findIndex(p => p.id === productId);
+          if (sourceIdx === -1) return prev;
+          const [movedItem] = list.splice(sourceIdx, 1);
+          const newTargetIdx = list.findIndex(p => p.id === targetProduct.id);
+          if (newTargetIdx === -1) return prev;
+          if (targetPos > currentVisibleIdx + 1) {
+            list.splice(newTargetIdx + 1, 0, movedItem);
+          } else {
+            list.splice(newTargetIdx, 0, movedItem);
+          }
+          safeSetItem("ckp_products_catalog", JSON.stringify(list));
+          return list;
+        });
+        setHasUnpublishedChanges(true);
+      };
 
       const isOwner = currentUser && currentUser.role === "owner";
       const isEmployee = currentUser && currentUser.role === "employee";
@@ -1883,25 +1959,54 @@
 
       const handleSaveProduct = (e) => {
         e.preventDefault();
+        const cleanedVariants = (productForm.variants && productForm.variants.length > 0)
+          ? productForm.variants.map(v => ({
+              size: (v.size || "Standard Pack").trim(),
+              weight: (v.weight || v.size || "250g").trim(),
+              price: Number(v.price) || 0,
+              originalPrice: Number(v.originalPrice) || Number(v.price) || 0
+            }))
+          : [{ size: "250g Pack", weight: "250g", price: 195, originalPrice: 250 }];
+
         const newP = {
           id: productForm.id || "ckp-" + Date.now(),
-          name: productForm.name,
-          tagline: productForm.tagline,
+          name: productForm.name ? productForm.name.trim() : "New Coastal Delicacy",
+          tagline: productForm.tagline ? productForm.tagline.trim() : "",
           category: productForm.category,
-          tag: productForm.tag,
-          spiceLevel: Number(productForm.spiceLevel),
-          stock: Number(productForm.stock),
+          tag: productForm.tag || "Fresh Batch",
+          spiceLevel: Number(productForm.spiceLevel) || 2,
+          stock: Number(productForm.stock) || 30,
           rating: 5.0,
           reviewsCount: 1,
-          image: productForm.image,
-          variants: [
-            { size: productForm.size1, price: Number(productForm.price1), originalPrice: Number(productForm.orig1) }
-          ],
-          description: productForm.description
+          image: productForm.image || "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+          variants: cleanedVariants,
+          description: productForm.description || ""
         };
-        setProducts(prev => [newP, ...prev]);
+
+        setProducts(prev => {
+          const next = [newP, ...prev];
+          safeSetItem("ckp_products_catalog", JSON.stringify(next));
+          return next;
+        });
         setHasUnpublishedChanges(true);
-        alert("Product added successfully! Click 'Save & Publish Live to Cloud' in the Stock tab to synchronize with GitHub.");
+
+        // Reset form
+        setProductForm({
+          id: "",
+          name: "",
+          tagline: "",
+          category: "Dry Fish",
+          tag: "Fresh Batch",
+          spiceLevel: 2,
+          stock: 30,
+          image: "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80",
+          variants: [
+            { size: "250g Pack", weight: "250g", price: 195, originalPrice: 250 }
+          ],
+          description: ""
+        });
+
+        alert("" added with  pack size(s) successfully! Click 'Publish Live to Customers' in the top bar to synchronize across all customer devices.);
         setOwnerTab("stock");
       };
 
@@ -2579,17 +2684,48 @@
                       <table className="w-full text-left text-xs">
                         <thead className="bg-stone-50 border-b font-bold text-stone-600">
                           <tr>
+                            <th className="p-3 text-center">Pos</th>
                             <th className="p-3">Product</th>
                             <th className="p-3">Category</th>
-                            <th className="p-3">Price</th>
+                            <th className="p-3">Packs & Pricing</th>
                             <th className="p-3">Live Stock Units</th>
                             <th className="p-3">Status</th>
                             <th className="p-3 text-center">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y text-stone-800">
-                          {products.map(p => (
+                          {products.map((p, pIdx) => (
                             <tr key={p.id}>
+                              <td className="p-3 text-center whitespace-nowrap">
+                                <div className="inline-flex items-center gap-1 bg-stone-100 p-1 rounded-lg border border-stone-200">
+                                  <button
+                                    type="button"
+                                    disabled={pIdx === 0}
+                                    onClick={() => handleShiftProduct(p.id, -1)}
+                                    className={px-1.5 py-0.5 rounded text-[10px] font-bold }
+                                    title="Move Up in Storefront"
+                                  >
+                                    &#9650;
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveProductToPosition(p.id, pIdx)}
+                                    className="font-mono text-xs font-bold text-amber-900 px-1 hover:underline"
+                                    title="Click to jump to a position number"
+                                  >
+                                    #{pIdx + 1}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={pIdx === products.length - 1}
+                                    onClick={() => handleShiftProduct(p.id, 1)}
+                                    className={px-1.5 py-0.5 rounded text-[10px] font-bold }
+                                    title="Move Down in Storefront"
+                                  >
+                                    &#9660;
+                                  </button>
+                                </div>
+                              </td>
                               <td className="p-3 flex items-center gap-3">
                                 <div className="relative group shrink-0">
                                   <img src={p.image} className="w-12 h-12 rounded-lg object-cover border" />
@@ -2630,7 +2766,19 @@
                                 </div>
                               </td>
                               <td className="p-3 font-semibold">{p.category}</td>
-                              <td className="p-3 font-bold">&#8377;{p.variants[0]?.price}</td>
+                              <td className="p-3 font-bold">
+                                {p.variants && p.variants.length > 1 ? (
+                                  <div className="text-xs space-y-0.5">
+                                    {p.variants.map((v, vIdx) => (
+                                      <div key={vIdx} className="text-[11px] text-stone-700 whitespace-nowrap">
+                                        <span className="text-stone-500 font-medium">{v.size || v.weight}:</span> &#8377;{v.price}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span>&#8377;{p.variants && p.variants[0] ? p.variants[0].price : "N/A"}</span>
+                                )}
+                              </td>
                               <td className="p-3">
                                 <input
                                   type="number"
@@ -2805,19 +2953,22 @@
                 {/* 4. UPLOAD PRODUCT TAB */}
                 {ownerTab === "upload" && (
                   <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-sm space-y-4">
-                    <h3 className="font-brand text-lg font-bold text-stone-900 border-b pb-3">Upload New Delicacy</h3>
-                    <form onSubmit={handleSaveProduct} className="space-y-3 text-xs">
+                                        <h3 className="font-brand text-lg font-bold text-stone-900 border-b pb-3 flex items-center justify-between">
+                      <span>Upload New Delicacy</span>
+                      <span className="text-xs text-stone-500 font-normal">Add multi-pack weights & custom prices</span>
+                    </h3>
+                    <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <label className="block font-bold text-stone-700 mb-1">Category</label>
                           <select
                             value={productForm.category}
                             onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                            className="w-full border rounded-xl px-3 py-2 font-bold"
+                            className="w-full border rounded-xl px-3 py-2 font-bold bg-white"
                           >
-                            <option value="Dry Fish">🐟 Sun-Dried Fish</option>
-                            <option value="Spices">🌿 Coastal Spices</option>
-                            <option value="Pickles">🏺 Barni Pickles</option>
+                            <option value="Dry Fish">&#128031; Sun-Dried Fish</option>
+                            <option value="Spices">&#127807; Coastal Spices</option>
+                            <option value="Pickles">&#127994; Barni Pickles</option>
                           </select>
                         </div>
                         <div>
@@ -2828,7 +2979,7 @@
                             value={productForm.name}
                             onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                             placeholder="e.g. Sukha Bombil Cleaned"
-                            className="w-full border rounded-xl px-3 py-2"
+                            className="w-full border rounded-xl px-3 py-2 bg-white font-medium"
                           />
                         </div>
                         <div>
@@ -2838,47 +2989,141 @@
                             value={productForm.tagline}
                             onChange={(e) => setProductForm({ ...productForm, tagline: e.target.value })}
                             placeholder="e.g. 100% Sun-Dried Konkan Gold"
-                            className="w-full border rounded-xl px-3 py-2"
+                            className="w-full border rounded-xl px-3 py-2 bg-white"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div>
-                          <label className="block font-bold text-stone-700 mb-1">Pack Size</label>
-                          <input
-                            type="text"
-                            required
-                            value={productForm.size1}
-                            onChange={(e) => setProductForm({ ...productForm, size1: e.target.value })}
-                            placeholder="250g Pack"
-                            className="w-full border rounded-xl px-3 py-2"
-                          />
+                      {/* MULTI-VARIANT PACK SIZES, WEIGHTS & PRICING */}
+                      <div className="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-200/80 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="font-bold text-stone-800 text-xs flex items-center gap-1.5">
+                            <span>&#128230;</span> Pack Sizes, Weights & Pricing (Like Existing Delicacies)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProductForm(prev => {
+                                const currentCount = (prev.variants || []).length;
+                                const nextWeight = currentCount === 1 ? "500g Value Pack" : currentCount === 2 ? "1kg Family Pack" : "Custom Pack";
+                                return {
+                                  ...prev,
+                                  variants: [
+                                    ...(prev.variants || []),
+                                    { size: nextWeight, weight: nextWeight, price: "", originalPrice: "" }
+                                  ]
+                                };
+                              });
+                            }}
+                            className="bg-amber-500 hover:bg-amber-600 text-stone-950 hover:text-white text-[11px] font-bold px-2.5 py-1 rounded-lg border border-amber-400 shadow-xs flex items-center gap-1 transition"
+                          >
+                            <span>&#10133;</span> Add Another Pack Size (e.g. 500g, 1kg)
+                          </button>
                         </div>
-                        <div>
-                          <label className="block font-bold text-stone-700 mb-1">Price (₹)</label>
-                          <input
-                            type="number"
-                            required
-                            value={productForm.price1}
-                            onChange={(e) => setProductForm({ ...productForm, price1: e.target.value })}
-                            placeholder="195"
-                            className="w-full border rounded-xl px-3 py-2 font-bold"
-                          />
-                        </div>
-                        <div>
-                          <label className="block font-bold text-stone-700 mb-1">Stock Units</label>
-                          <input
-                            type="number"
-                            required
-                            value={productForm.stock}
-                            onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
-                            className="w-full border rounded-xl px-3 py-2 font-bold"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 space-y-2">
+                        <div className="space-y-2">
+                          {(productForm.variants || []).map((v, vIdx) => (
+                            <div key={vIdx} className="bg-white p-2.5 rounded-xl border border-stone-200 flex flex-wrap items-center gap-2 shadow-xs">
+                              <span className="bg-stone-200 text-stone-800 font-bold px-2 py-0.5 rounded text-[10px]">
+                                Pack #{vIdx + 1}
+                              </span>
+                              <div className="flex-1 min-w-[130px]">
+                                <label className="block text-[10px] text-stone-500 font-bold mb-0.5">Package Weight / Title</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={v.size}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setProductForm(prev => {
+                                      const arr = [...(prev.variants || [])];
+                                      arr[vIdx] = { ...arr[vIdx], size: val, weight: val };
+                                      return { ...prev, variants: arr };
+                                    });
+                                  }}
+                                  placeholder="e.g. 250g Pack, 500g, 1kg"
+                                  className="w-full border rounded-lg px-2.5 py-1 text-xs bg-white font-medium"
+                                />
+                              </div>
+                              <div className="w-24">
+                                <label className="block text-[10px] text-stone-500 font-bold mb-0.5">Selling Price (&#8377;)</label>
+                                <input
+                                  type="number"
+                                  required
+                                  min="1"
+                                  value={v.price}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setProductForm(prev => {
+                                      const arr = [...(prev.variants || [])];
+                                      arr[vIdx] = { ...arr[vIdx], price: val };
+                                      return { ...prev, variants: arr };
+                                    });
+                                  }}
+                                  placeholder="195"
+                                  className="w-full border rounded-lg px-2 py-1 text-xs bg-white font-bold text-stone-900"
+                                />
+                              </div>
+                              <div className="w-24">
+                                <label className="block text-[10px] text-stone-500 font-bold mb-0.5">Original / MRP (&#8377;)</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={v.originalPrice}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setProductForm(prev => {
+                                      const arr = [...(prev.variants || [])];
+                                      arr[vIdx] = { ...arr[vIdx], originalPrice: val };
+                                      return { ...prev, variants: arr };
+                                    });
+                                  }}
+                                  placeholder="250"
+                                  className="w-full border rounded-lg px-2 py-1 text-xs bg-white text-stone-600 line-through"
+                                />
+                              </div>
+                              {(productForm.variants || []).length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductForm(prev => ({
+                                      ...prev,
+                                      variants: prev.variants.filter((_, idx) => idx !== vIdx)
+                                    }));
+                                  }}
+                                  className="text-red-600 hover:text-red-800 p-1.5 rounded-lg hover:bg-red-50 text-xs font-bold self-end"
+                                  title="Remove this pack variant"
+                                >
+                                  &#10005;
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Total Stock Units Available</label>
+                            <input
+                              type="number"
+                              required
+                              value={productForm.stock}
+                              onChange={(e) => setProductForm({ ...productForm, stock: Number(e.target.value) })}
+                              className="w-full border rounded-xl px-3 py-2 font-bold bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block font-bold text-stone-700 mb-1">Badge Tag</label>
+                            <input
+                              type="text"
+                              value={productForm.tag}
+                              onChange={(e) => setProductForm({ ...productForm, tag: e.target.value })}
+                              placeholder="e.g. Fresh Batch, Bestseller"
+                              className="w-full border rounded-xl px-3 py-2 bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div><div className="bg-amber-50/70 p-3 rounded-2xl border border-amber-200 space-y-2">
                         <label className="block font-bold text-stone-800 text-xs flex items-center gap-1.5">
                           <span>&#128247;</span> Product Photo (Upload from Device or Paste URL)
                         </label>
@@ -4992,15 +5237,84 @@
                   </div>
                 </div>
                 
-                {/* Cards */}
+                {/* Cards with Owner Drag-and-Drop & Shift Controls */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredProducts.map(product => {
+                  {filteredProducts.map((product, idx) => {
                     const currentVIdx = selectedVariants[product.id] || 0;
                     const variant = product.variants[currentVIdx] || product.variants[0];
                     const isOutOfStock = product.stock <= 0;
+                    const isDraggingThis = draggedProductId === product.id;
+                    const isDragOverThis = dragOverProductId === product.id;
 
                     return (
-                      <div key={product.id} className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col group">
+                      <div
+                        key={product.id}
+                        draggable={isEditor}
+                        onDragStart={(e) => {
+                          if (!isEditor) return;
+                          e.dataTransfer.setData("text/plain", product.id);
+                          setDraggedProductId(product.id);
+                        }}
+                        onDragOver={(e) => {
+                          if (!isEditor) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          if (dragOverProductId !== product.id) {
+                            setDragOverProductId(product.id);
+                          }
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverProductId === product.id) {
+                            setDragOverProductId(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (!isEditor) return;
+                          e.preventDefault();
+                          const srcId = e.dataTransfer.getData("text/plain") || draggedProductId;
+                          handleReorderProducts(srcId, product.id);
+                          setDraggedProductId(null);
+                          setDragOverProductId(null);
+                        }}
+                        className={g-white rounded-3xl overflow-hidden border transition-all duration-300 flex flex-col group relative  }
+                      >
+                        {/* Owner Position & Drag Reorder Bar */}
+                        {isEditor && (
+                          <div className="bg-stone-900 text-stone-100 px-3 py-1.5 flex items-center justify-between text-xs border-b border-amber-500/40 select-none z-10" onClick={e => e.stopPropagation()}>
+                            <div className="flex items-center gap-1.5 font-bold text-amber-300 text-[11px]">
+                              <span className="cursor-grab active:cursor-grabbing text-stone-400 hover:text-amber-300 text-sm" title="Click & Drag to move position">&#9776;</span>
+                              <button
+                                type="button"
+                                onClick={() => handleMoveProductToPosition(product.id, idx)}
+                                className="bg-amber-500/20 hover:bg-amber-500 text-amber-200 hover:text-stone-950 px-2 py-0.5 rounded text-[10px] font-black border border-amber-400/40 transition"
+                                title="Click to jump to a specific position number (1st, 2nd, 3rd...)"
+                              >
+                                #{idx + 1}
+                              </button>
+                              <span className="text-[10px] text-stone-400 font-normal hidden sm:inline">Position</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => handleShiftProduct(product.id, -1)}
+                                className={px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-0.5 }
+                                title="Shift left / earlier (e.g. 2nd to 1st)"
+                              >
+                                &#9664; Shift
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === filteredProducts.length - 1}
+                                onClick={() => handleShiftProduct(product.id, 1)}
+                                className={px-2 py-0.5 rounded text-[10px] font-bold transition flex items-center gap-0.5 }
+                                title="Shift right / later (e.g. 1st to 2nd)"
+                              >
+                                Shift &#9654;
+                              </button>
+                            </div>
+                          </div>
+                        )}
                         <div className="relative h-64 overflow-hidden bg-stone-100 cursor-pointer" onClick={() => openProductDetail(product, currentVIdx)}>
                           <img
                             src={product.image}
