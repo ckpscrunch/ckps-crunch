@@ -51,6 +51,9 @@
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
+  <!-- Razorpay Standard Checkout SDK (Live Dynamic QR & Bank Webhook Auto-Detection) -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <style>
     html { scroll-behavior: smooth; }
     ::-webkit-scrollbar { width: 7px; }
@@ -621,6 +624,7 @@
             id: "Tejas1999",
             password: "Yash2006",
             upiId: "masterpradhan1231@upi",
+            razorpayKeyId: "",
             storeName: "CKP's Crunch",
             freeDeliveryMin: 999999,
             shippingFee: 95,
@@ -665,6 +669,7 @@
             id: "Tejas1999",
             password: "Yash2006",
             upiId: "masterpradhan1231@upi",
+            razorpayKeyId: "",
             storeName: "CKP's Crunch",
             freeDeliveryMin: 499,
             shippingFee: 50
@@ -832,6 +837,73 @@
           setOrderSuccessData(prev => ({ ...prev, status: newStatus }));
         }
         setHasUnpublishedChanges(true);
+      };
+
+      // Owner Handler: Confirm Pending Direct UPI / Bank UTR Payment
+      const handleConfirmPendingPayment = (orderId) => {
+        if (!isEditor) return;
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId) {
+            return {
+              ...o,
+              status: "Payment Confirmed (Verified by Owner)",
+              isVerified: true,
+              verifiedAt: new Date().toLocaleString("en-IN")
+            };
+          }
+          return o;
+        }));
+        if (trackedOrder && trackedOrder.orderId === orderId) {
+          setTrackedOrder(prev => ({ ...prev, status: "Payment Confirmed (Verified by Owner)", isVerified: true }));
+        }
+        if (orderSuccessData && orderSuccessData.orderId === orderId) {
+          setOrderSuccessData(prev => ({ ...prev, status: "Payment Confirmed (Verified by Owner)", isVerified: true }));
+        }
+        setHasUnpublishedChanges(true);
+        alert(`Order #${orderId} payment verified & confirmed successfully!`);
+      };
+
+      // Owner Handler: Reject Unpaid or Fake UTR Order
+      const handleRejectPendingPayment = (orderId) => {
+        if (!isEditor) return;
+        const target = orders.find(o => o.orderId === orderId);
+        if (!target) return;
+        const reason = prompt("Enter reason for rejecting payment (e.g. UTR not received in bank account, invalid reference):", "Payment not received in bank account");
+        if (reason === null) return;
+
+        // Restore stock
+        setProducts(prev => {
+          return prev.map(prod => {
+            const matches = (target.items || []).filter(i => i.productId === prod.id);
+            if (matches.length > 0) {
+              const qty = matches.reduce((sum, item) => sum + item.quantity, 0);
+              return { ...prod, stock: prod.stock + qty };
+            }
+            return prod;
+          });
+        });
+
+        const rejTimestamp = new Date().toLocaleString("en-IN");
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId) {
+            return {
+              ...o,
+              status: "Rejected (Unpaid / Fake UTR)",
+              rejectionReason: reason.trim() || "Payment not received",
+              isVerified: false,
+              rejectedAt: rejTimestamp
+            };
+          }
+          return o;
+        }));
+        if (trackedOrder && trackedOrder.orderId === orderId) {
+          setTrackedOrder(prev => ({ ...prev, status: "Rejected (Unpaid / Fake UTR)", isVerified: false, rejectionReason: reason.trim() }));
+        }
+        if (orderSuccessData && orderSuccessData.orderId === orderId) {
+          setOrderSuccessData(prev => ({ ...prev, status: "Rejected (Unpaid / Fake UTR)", isVerified: false, rejectionReason: reason.trim() }));
+        }
+        setHasUnpublishedChanges(true);
+        alert(`Order #${orderId} marked as Rejected (Unpaid). Reserved inventory has been restored.`);
       };
 
       // Owner Handlers to Delete Past Transactions & Order History
@@ -1151,6 +1223,9 @@
       const [pendingOrder, setPendingOrder] = useState(null);
       const [paymentStep, setPaymentStep] = useState("awaiting"); // 'awaiting', 'detecting', 'confirmed'
       const [paymentTimer, setPaymentTimer] = useState(300); // 5 min countdown
+      const [enteredUtr, setEnteredUtr] = useState("");
+      const [utrError, setUtrError] = useState("");
+      const [isVerifyingUtr, setIsVerifyingUtr] = useState(false);
 
       // Login form state
       const [loginId, setLoginId] = useState("");
@@ -1693,54 +1768,148 @@
         return () => clearInterval(interval);
       }, [showAutoPaymentGatewayModal, paymentStep, paymentTimer]);
 
-      // Simulated Auto-Payment Confirmation (Like Amazon / Razorpay Auto-Fetch)
-      const triggerAutoPaymentConfirmation = () => {
-        setPaymentStep("detecting");
-        setTimeout(() => {
-          setPaymentStep("confirmed");
-          
-          // Complete the order
-          const finalOrder = {
-            ...pendingOrder,
-            status: "Payment Confirmed ✅ (Auto-Verified)",
-            utrNumber: "UPI-" + Math.floor(100000000000 + Math.random() * 900000000000)
-          };
+      // Complete Order helper: Handles real verified transactions & genuine UTR submissions
+      const completeOrderWithPayment = (finalStatus, utrReference, isAutoVerified) => {
+        const finalOrder = {
+          ...pendingOrder,
+          status: finalStatus,
+          utrNumber: utrReference,
+          isVerified: !!isAutoVerified,
+          paymentMethod: isAutoVerified ? "Automated Live Gateway (Razorpay)" : "Direct Bank UPI (masterpradhan1231@upi)",
+          confirmedAt: new Date().toLocaleString("en-IN")
+        };
 
-          // Deduct stock
-          setProducts(prev => {
-            return prev.map(prod => {
-              const matches = finalOrder.items.filter(i => i.productId === prod.id);
-              if (matches.length > 0) {
-                const qty = matches.reduce((sum, item) => sum + item.quantity, 0);
-                return { ...prod, stock: Math.max(0, prod.stock - qty) };
-              }
-              return prod;
-            });
-          });
-
-          // Save to Master Orders list
-          setOrders(prev => [finalOrder, ...prev]);
-
-          if (typeof confetti === "function") {
-            confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
-          }
-
-          setTimeout(() => {
-            setShowAutoPaymentGatewayModal(false);
-            setOrderSuccessData(finalOrder);
-            setCart([]);
-            if (currentUser && (currentUser.mobile || currentUser.id)) {
-              const uid = currentUser.mobile || currentUser.id;
-              safeSetItem("ckp_user_cart_" + uid, JSON.stringify([]));
-              setRegisteredUsers(prev => {
-                if (!prev[uid]) return prev;
-                return { ...prev, [uid]: { ...prev[uid], cart: [] } };
-              });
+        // Deduct inventory stock
+        setProducts(prev => {
+          return prev.map(prod => {
+            const matches = finalOrder.items.filter(i => i.productId === prod.id);
+            if (matches.length > 0) {
+              const qty = matches.reduce((sum, item) => sum + item.quantity, 0);
+              return { ...prod, stock: Math.max(0, prod.stock - qty) };
             }
-          }, 1500);
-        }, 2200);
+            return prod;
+          });
+        });
+
+        // Save to Master Orders list
+        setOrders(prev => [finalOrder, ...prev]);
+
+        if (typeof confetti === "function") {
+          confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
+        }
+
+        setShowAutoPaymentGatewayModal(false);
+        setOrderSuccessData(finalOrder);
+        setCart([]);
+        setEnteredUtr("");
+        setUtrError("");
+        if (currentUser && (currentUser.mobile || currentUser.id)) {
+          const uid = currentUser.mobile || currentUser.id;
+          safeSetItem("ckp_user_cart_" + uid, JSON.stringify([]));
+          setRegisteredUsers(prev => {
+            if (!prev[uid]) return prev;
+            return { ...prev, [uid]: { ...prev[uid], cart: [] } };
+          });
+        }
+        setHasUnpublishedChanges(true);
       };
 
+      // Real Automated Live Gateway (Razorpay Dynamic QR & Bank Webhook Auto-Detection)
+      const handleLaunchRazorpayGateway = () => {
+        if (!pendingOrder) return;
+        if (typeof window.Razorpay === "undefined") {
+          alert("Payment gateway is loading. Please check internet connection or use Direct UPI below.");
+          return;
+        }
+
+        // Use configured Razorpay Key ID or fallback test gateway key
+        const rzpKey = (ownerConfig.razorpayKeyId && ownerConfig.razorpayKeyId.trim().length > 6)
+          ? ownerConfig.razorpayKeyId.trim()
+          : "rzp_test_51111111111111";
+
+        const options = {
+          key: rzpKey,
+          amount: Math.round(pendingOrder.total * 100), // In paise
+          currency: "INR",
+          name: "CKP's Crunch",
+          description: "Order #" + pendingOrder.orderId + " (" + pendingOrder.items.length + " Delicacies)",
+          image: "https://ckpscrunch.github.io/ckps-crunch/favicon.ico",
+          prefill: {
+            name: pendingOrder.customer?.fullName || "",
+            contact: pendingOrder.customer?.mobile || "",
+            email: pendingOrder.customer?.email || "orders@ckpscrunch.com"
+          },
+          notes: {
+            orderId: pendingOrder.orderId,
+            deliveryAddress: (pendingOrder.customer?.streetAddress || "") + ", " + (pendingOrder.customer?.city || "")
+          },
+          theme: {
+            color: "#0c4a6e"
+          },
+          // REAL BANK NETWORK HANDLER: ONLY FIRES WHEN PAYMENT IS ACTUALLY COMPLETED!
+          handler: function (response) {
+            if (response && response.razorpay_payment_id) {
+              completeOrderWithPayment("Payment Confirmed (Auto-Verified)", response.razorpay_payment_id, true);
+            } else {
+              alert("Payment could not be verified by the banking network. Please try again.");
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              console.log("Customer closed the payment gateway without completing payment.");
+            }
+          }
+        };
+
+        try {
+          const rzpInstance = new window.Razorpay(options);
+          rzpInstance.on("payment.failed", function (resp) {
+            alert("Payment Failed: " + (resp.error?.description || "Bank declined transaction. Please retry."));
+          });
+          rzpInstance.open();
+        } catch (err) {
+          console.error("Razorpay error:", err);
+          alert("Could not open automated gateway: " + (err.message || "Please use Option B (Direct UPI) below."));
+        }
+      };
+
+      // Direct Bank UPI Submission with Genuine 12-Digit Bank UTR Verification
+      const handleSubmitUtrPayment = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        setUtrError("");
+        const clean = (enteredUtr || "").trim().replace(/[^0-9]/g, "");
+
+        // 1. Must be exactly 12 numeric digits
+        if (clean.length !== 12) {
+          setUtrError("Bank Reference / UTR number must be exactly 12 digits (numbers only).");
+          return;
+        }
+
+        // 2. Reject fake repetitive dummy patterns
+        const dummyPatterns = [
+          "000000000000", "111111111111", "222222222222", "333333333333",
+          "444444444444", "555555555555", "666666666666", "777777777777",
+          "888888888888", "999999999999", "123456789012", "012345678901"
+        ];
+        if (dummyPatterns.includes(clean) || /^(\d)\1{11}$/.test(clean)) {
+          setUtrError("Please enter your authentic 12-digit UTR from your UPI payment receipt.");
+          return;
+        }
+
+        // 3. Reject duplicate UTRs already registered
+        const existing = orders.find(o => o.utrNumber && o.utrNumber.toString().trim() === clean);
+        if (existing) {
+          setUtrError(`This UTR (${clean}) is already recorded for Order #${existing.orderId}. Please provide the genuine receipt UTR for this transaction.`);
+          return;
+        }
+
+        setIsVerifyingUtr(true);
+        setTimeout(() => {
+          setIsVerifyingUtr(false);
+          // Save with status "Awaiting Payment Verification (UTR: ...)"
+          completeOrderWithPayment("Awaiting Payment Verification (UTR: " + clean + ")", clean, false);
+        }, 500);
+      };
       // Dynamic UPI Intent URI
       const dynamicUpiUri = useMemo(() => {
         if (!pendingOrder) return "";
@@ -2470,6 +2639,13 @@
                         </button>
                         <button
                           type="button"
+                          onClick={() => setOrderFilterTab("pending")}
+                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "pending" ? "bg-amber-700 text-white shadow-xs" : "bg-amber-50 text-amber-900 hover:bg-amber-100"}`}
+                        >
+                          Pending Verification ({orders.filter(o => (o.status && o.status.includes("Awaiting Payment Verification")) || o.isVerified === false).length})
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setOrderFilterTab("cancelled")}
                           className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "cancelled" ? "bg-red-700 text-white shadow-xs" : "bg-red-50 text-red-800 hover:bg-red-100"}`}
                         >
@@ -2508,7 +2684,12 @@
                     ) : (
                       <div className="space-y-4">
                         {orders
-                          .filter(o => orderFilterTab === "all" ? true : (orderFilterTab === "cancelled" ? o.status === "Cancelled by Customer" : o.status !== "Cancelled by Customer"))
+                          .filter(o => {
+                            if (orderFilterTab === "all") return true;
+                            if (orderFilterTab === "cancelled") return o.status === "Cancelled by Customer";
+                            if (orderFilterTab === "pending") return (o.status && o.status.includes("Awaiting Payment Verification")) || o.isVerified === false;
+                            return o.status !== "Cancelled by Customer";
+                          })
                           .map(order => (
                           <div key={order.orderId} className={`p-4 rounded-2xl border text-xs space-y-2.5 transition ${
                             order.status === "Cancelled by Customer"
@@ -2544,7 +2725,9 @@
                                       }`}
                                       title="Update delivery status for this order"
                                     >
-                                      <option value="Payment Confirmed (Auto-Verified)">Payment Confirmed</option>
+                                      <option value="Awaiting Payment Verification">Awaiting Payment Verification</option>
+                                      <option value="Payment Confirmed (Auto-Verified)">Payment Confirmed (Auto-Verified)</option>
+                                      <option value="Payment Confirmed (Verified by Owner)">Payment Confirmed (Verified by Owner)</option>
                                       <option value="Packed">Packed</option>
                                       <option value="Dispatched">Dispatched</option>
                                       <option value="Out for Delivery">Out for Delivery</option>
@@ -2572,6 +2755,58 @@
                                   <span>Customer Cancelled Order</span>
                                 </div>
                                 <div><strong>Reason:</strong> "{order.cancellationReason || "Customer cancelled order"}" {order.cancelledAt && <span className="opacity-75">({order.cancelledAt})</span>}</div>
+                              </div>
+                            )}
+
+                            {order.status && (order.status.includes("Awaiting Payment Verification") || order.isVerified === false) && order.status !== "Cancelled by Customer" && !order.status.includes("Rejected") && (
+                              <div className="bg-amber-50 border border-amber-300 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                                <div>
+                                  <div className="font-bold text-amber-950 flex items-center gap-1.5">
+                                    <span>&#9888;</span>
+                                    <span>Payment Verification Required (Submitted UTR: <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-300 text-stone-900 font-black">{order.utrNumber}</span>)</span>
+                                  </div>
+                                  <div className="text-[11px] text-amber-900 mt-0.5">
+                                    Check your UPI app / bank account for credit of <strong>&#8377;{order.total}</strong> from {order.customer?.fullName || "customer"}.
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleConfirmPendingPayment(order.orderId)}
+                                    className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
+                                    title="Verify this UTR and mark order payment as confirmed"
+                                  >
+                                    <span>&#10003;</span> Confirm Payment
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRejectPendingPayment(order.orderId)}
+                                    className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs transition flex items-center gap-1 cursor-pointer"
+                                    title="Reject this order due to unpaid or fake UTR"
+                                  >
+                                    <span>&times;</span> Reject Unpaid
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {order.isVerified && (
+                              <div className="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-emerald-900 text-[11px] font-bold flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                  <span>&#10003;</span>
+                                  <span>Payment Verified ({order.paymentMethod || "Bank Verified"})</span>
+                                </span>
+                                <span className="font-mono text-[10px] text-emerald-800">Ref: {order.utrNumber}</span>
+                              </div>
+                            )}
+
+                            {order.status && order.status.includes("Rejected") && (
+                              <div className="bg-red-100/90 p-2.5 rounded-xl border border-red-200 text-red-900 font-semibold text-[11px] space-y-0.5">
+                                <div className="font-bold flex items-center gap-1">
+                                  <span>&times;</span>
+                                  <span>Order Rejected: Unpaid / Fake UTR</span>
+                                </div>
+                                <div><strong>Reason:</strong> "{order.rejectionReason || "Payment not received in bank account"}"</div>
                               </div>
                             )}
 
@@ -2806,6 +3041,53 @@
                             />
                             <span className="text-[10px] text-stone-500">Delhi, BLR, Chennai</span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* PAYMENT GATEWAY & UPI QR SETTINGS */}
+                    <div className="bg-gradient-to-r from-sky-50 to-amber-50 p-5 rounded-2xl border border-sky-200 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                            <span>&#128179;</span> Payment Gateway &amp; UPI QR Settings
+                          </h4>
+                          <p className="text-[11px] text-stone-600 mt-0.5">
+                            Configure your automated payment gateway credentials and store UPI ID.
+                          </p>
+                        </div>
+                        <span className="bg-sky-100 text-sky-900 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">
+                          Live Payment Engine
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Direct Bank UPI ID (VPA):</label>
+                          <input
+                            type="text"
+                            value={ownerConfig.upiId || "masterpradhan1231@upi"}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, upiId: e.target.value.trim() })}
+                            placeholder="e.g. masterpradhan1231@upi"
+                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
+                          />
+                          <p className="text-[10px] text-stone-500 mt-1">
+                            Displayed for Option B (Direct UPI transfer). Customers must submit an authentic 12-digit UTR receipt.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Razorpay Key ID (For 100% Automated QR Detection):</label>
+                          <input
+                            type="text"
+                            value={ownerConfig.razorpayKeyId || ""}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, razorpayKeyId: e.target.value.trim() })}
+                            placeholder="e.g. rzp_live_xxxxxxxx or rzp_test_xxxxxxxx"
+                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
+                          />
+                          <p className="text-[10px] text-stone-500 mt-1">
+                            Free from razorpay.com. Powers Option A with instant dynamic QR code bank auto-detection.
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -6167,104 +6449,212 @@
           {/* ================= STEP 2: AUTO PAYMENT GATEWAY (AUTO-FETCH & QR) ================= */}
           {showAutoPaymentGatewayModal && pendingOrder && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-stone-200 text-center space-y-4 p-6">
+              <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200 text-center space-y-4 p-6">
                 
                 {/* Header */}
                 <div className="flex justify-between items-center border-b pb-3">
-                  <div>
-                    <h3 className="font-brand font-black text-xl text-stone-900">CKP Auto Payment Gateway</h3>
-                    <p className="text-[11px] text-stone-500">Auto-detecting payment like Amazon Pay</p>
+                  <div className="text-left">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <h3 className="font-brand font-black text-xl text-stone-900">Secure Payment Checkout</h3>
+                    </div>
+                    <p className="text-[11px] text-stone-500">Official UPI &amp; Dynamic QR Gateway &bull; Order #{pendingOrder.orderId}</p>
                   </div>
-                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">✕</button>
+                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none">&times;</button>
                 </div>
 
                 {/* Amount Highlight */}
-                <div className="bg-sky-50 p-3 rounded-2xl border border-sky-200">
-                  <div className="text-xs text-sky-900 font-semibold">Total Payable Amount:</div>
-                  <div className="text-3xl font-black text-sky-950">₹{pendingOrder.total}</div>
-                  <div className="text-[10px] text-sky-700 font-mono mt-0.5">UPI ID: {ownerConfig.upiId}</div>
+                <div className="bg-gradient-to-r from-sky-50 via-sky-100/50 to-amber-50 p-3.5 rounded-2xl border border-sky-200 flex justify-between items-center text-left">
+                  <div>
+                    <div className="text-xs text-stone-600 font-semibold">Total Payable Amount:</div>
+                    <div className="text-3xl font-black text-stone-950">&#8377;{pendingOrder.total}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-300">
+                      UPI: {ownerConfig.upiId}
+                    </span>
+                    <div className="text-[10px] text-stone-500 mt-1">Recipient: CKP's Crunch</div>
+                  </div>
                 </div>
 
-                {/* DYNAMIC QR CODE FOR THIS ORDER */}
-                <div className="relative inline-block p-3 bg-white rounded-2xl shadow-md border-2 border-dashed border-sky-400">
-                  <img src={upiQrUrl} alt="Order QR Code" className="w-48 h-48 mx-auto rounded-lg" />
-                  
-                  {paymentStep === "detecting" && (
-                    <div className="absolute inset-0 bg-white/90 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-4">
-                      <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin"></div>
-                      <div className="font-bold text-sky-900 text-xs mt-3">Auto-Fetching Payment Status...</div>
-                      <div className="text-[10px] text-stone-500">Verifying transaction with bank network</div>
+                {/* METHOD 1: AUTOMATED LIVE GATEWAY (DYNAMIC QR AUTO-DETECTION) */}
+                <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-200 text-left space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-black text-xs text-sky-950 flex items-center gap-1.5">
+                      <span>&#9889;</span>
+                      <span>Option A: Automated Live QR / UPI Gateway</span>
                     </div>
-                  )}
-
-                  {paymentStep === "confirmed" && (
-                    <div className="absolute inset-0 bg-emerald-50/95 rounded-2xl flex flex-col items-center justify-center p-4">
-                      <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">✓</div>
-                      <div className="font-bold text-emerald-900 text-sm mt-2">Payment Confirmed!</div>
-                    </div>
-                  )}
+                    <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Auto-Detects Payment
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-sky-900/80">
+                    Scans dynamic QR code or opens GPay/PhonePe/Paytm. Bank network auto-verifies payment in seconds with zero manual typing.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleLaunchRazorpayGateway}
+                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-black py-3 px-4 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>&#9889;</span>
+                    <span>Launch Live Auto-Detecting Gateway (&#8377;{pendingOrder.total})</span>
+                  </button>
                 </div>
 
-                {/* Auto Status Bar */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-stone-600">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>Live Listening for Payment... ({Math.floor(paymentTimer / 60)}:{(paymentTimer % 60).toString().padStart(2, '0')})</span>
+                {/* DIVIDER */}
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-stone-200"></div>
+                  <span className="flex-shrink mx-3 text-stone-400 text-[11px] font-bold uppercase tracking-wider">OR DIRECT BANK UPI</span>
+                  <div className="flex-grow border-t border-stone-200"></div>
+                </div>
+
+                {/* METHOD 2: DIRECT BANK UPI QR + 12-DIGIT UTR VERIFICATION */}
+                <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
+                      <span>&#127974;</span>
+                      <span>Option B: Direct UPI QR Scan &amp; 12-Digit Bank UTR</span>
+                    </div>
+                    <span className="text-[10px] text-stone-500 font-mono">{ownerConfig.upiId}</span>
                   </div>
 
-                  {/* Deep link for mobile users */}
-                  <a
-                    href={dynamicUpiUri}
-                    onClick={() => setTimeout(triggerAutoPaymentConfirmation, 3000)}
-                    className="block bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl shadow text-xs"
-                  >
-                    ⚡ Tap to Pay via GPay / PhonePe / Paytm
-                  </a>
+                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-xl border border-stone-200">
+                    {/* Dynamic Order QR Code */}
+                    <div className="flex-shrink-0 text-center">
+                      <img src={upiQrUrl} alt="Direct UPI QR Code" className="w-36 h-36 mx-auto rounded-lg border border-stone-200 shadow-xs" />
+                      <span className="text-[10px] text-stone-500 font-semibold block mt-1">Scan via any UPI App</span>
+                    </div>
 
-                  {/* Manual trigger button for desktop testers */}
-                  <button
-                    onClick={triggerAutoPaymentConfirmation}
-                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-bold py-2 rounded-xl text-xs shadow"
-                  >
-                    Paid via UPI App? Click to Auto-Verify & Confirm
-                  </button>
+                    <div className="text-xs space-y-2 flex-1">
+                      <div className="text-stone-700 space-y-1 text-[11px]">
+                        <div><strong>1.</strong> Scan the QR or tap below on your mobile.</div>
+                        <div><strong>2.</strong> Complete payment of <strong>&#8377;{pendingOrder.total}</strong>.</div>
+                        <div><strong>3.</strong> Copy the <strong>12-digit UTR / Ref No.</strong> from your UPI app receipt and enter it below.</div>
+                      </div>
+
+                      {/* Deep link for mobile users (ONLY opens app, NO fake confirmation) */}
+                      <a
+                        href={dynamicUpiUri}
+                        className="inline-flex items-center justify-center gap-1.5 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow-xs transition"
+                      >
+                        <span>&#128241;</span>
+                        <span>Tap to Open UPI App (GPay / PhonePe)</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* 12-Digit UTR Submission Form */}
+                  <form onSubmit={handleSubmitUtrPayment} className="space-y-2 pt-1">
+                    <label className="block text-[11px] font-bold text-stone-800">
+                      Enter 12-Digit Bank Reference / UTR Number:
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        maxLength={12}
+                        value={enteredUtr}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 12);
+                          setEnteredUtr(val);
+                          setUtrError("");
+                        }}
+                        placeholder="e.g. 431289567123 (12 digits)"
+                        className="w-full border-2 border-stone-300 focus:border-stone-900 rounded-xl px-3.5 py-2.5 font-mono text-sm tracking-widest font-black bg-white"
+                      />
+                      <span className="absolute right-3 top-3 text-[10px] font-mono text-stone-400 font-bold">
+                        {enteredUtr.length}/12
+                      </span>
+                    </div>
+
+                    {utrError && (
+                      <div className="p-2 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[11px] font-semibold flex items-center gap-1.5">
+                        <span>&#9888;</span>
+                        <span>{utrError}</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={enteredUtr.length !== 12 || isVerifyingUtr}
+                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs shadow transition flex items-center justify-center gap-2 ${
+                        enteredUtr.length === 12 && !isVerifyingUtr
+                          ? "bg-stone-900 hover:bg-stone-800 text-white cursor-pointer"
+                          : "bg-stone-200 text-stone-400 cursor-not-allowed"
+                      }`}
+                    >
+                      {isVerifyingUtr ? (
+                        <span>Verifying UTR Reference...</span>
+                      ) : (
+                        <span>&#10003; Submit 12-Digit UTR &amp; Place Order</span>
+                      )}
+                    </button>
+                    <p className="text-[10px] text-stone-500 text-center">
+                      Your order will be verified against bank credits before packaging &amp; dispatch.
+                    </p>
+                  </form>
                 </div>
 
               </div>
             </div>
           )}
-
-
           {/* ================= ORDER CONFIRMATION MODAL ================= */}
           {orderSuccessData && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 text-center space-y-4">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner">
-                  ✓
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto shadow-inner ${
+                  orderSuccessData.isVerified ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                }`}>
+                  {orderSuccessData.isVerified ? "âœ“" : "â³"}
                 </div>
-                <h3 className="font-brand font-black text-2xl text-stone-900">Order Confirmed! 🙏</h3>
-                <p className="text-xs text-stone-500">Order #{orderSuccessData.orderId} • Status: {orderSuccessData.status}</p>
+                <h3 className="font-brand font-black text-2xl text-stone-900">
+                  {orderSuccessData.isVerified ? "Order Confirmed! ðŸŽ‰" : "Order Placed & Pending Verification"}
+                </h3>
+                <p className="text-xs text-stone-500">Order #{orderSuccessData.orderId} &bull; Status: {orderSuccessData.status}</p>
+
+                {/* Verified vs Pending explanation */}
+                {orderSuccessData.isVerified ? (
+                  <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl text-left text-xs text-emerald-900">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>âœ“</span>
+                      <span>Payment Auto-Verified by Bank Network</span>
+                    </div>
+                    <div className="text-[11px] text-emerald-800 mt-1 font-mono">
+                      Transaction ID: {orderSuccessData.utrNumber}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-left text-xs text-amber-900">
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>â³</span>
+                      <span>Awaiting Owner Bank Verification</span>
+                    </div>
+                    <div className="text-[11px] text-amber-800 mt-1">
+                      Submitted UTR: <strong className="font-mono">{orderSuccessData.utrNumber}</strong>. Our accounts team will verify this bank reference number before packaging and shipping your delicacies.
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-stone-50 p-4 rounded-2xl border text-left text-xs space-y-2">
-                  <div className="font-bold text-stone-900">{orderSuccessData.customer.fullName} ({orderSuccessData.customer.mobile})</div>
-                  <div className="text-stone-600 text-[11px]">{orderSuccessData.customer.streetAddress}, {orderSuccessData.customer.city} - {orderSuccessData.customer.pincode}</div>
+                  <div className="font-bold text-stone-900">{orderSuccessData.customer?.fullName} ({orderSuccessData.customer?.mobile})</div>
+                  <div className="text-stone-600 text-[11px]">{orderSuccessData.customer?.streetAddress}, {orderSuccessData.customer?.city} - {orderSuccessData.customer?.pincode}</div>
                   <div className="border-t pt-2 space-y-1">
                     {orderSuccessData.items.map(i => (
                       <div key={i.id} className="flex justify-between text-stone-700">
                         <span>{i.name} ({i.size}) x{i.quantity}</span>
-                        <span className="font-bold">₹{i.price * i.quantity}</span>
+                        <span className="font-bold">&#8377;{i.price * i.quantity}</span>
                       </div>
                     ))}
                   </div>
                   <div className="border-t pt-2 flex justify-between font-black text-sm text-stone-900">
-                    <span>Total Paid</span>
-                    <span>₹{orderSuccessData.total}</span>
+                    <span>Total Amount</span>
+                    <span>&#8377;{orderSuccessData.total}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2 pt-2">
                   <div className="flex gap-2">
-                    <button onClick={() => window.print()} className="flex-1 py-2.5 border rounded-xl font-bold text-xs hover:bg-stone-50 transition">🖨️ Print Receipt</button>
+                    <button onClick={() => window.print()} className="flex-1 py-2.5 border rounded-xl font-bold text-xs hover:bg-stone-50 transition">Print Receipt</button>
                     <button onClick={() => setOrderSuccessData(null)} className="flex-1 py-2.5 bg-stone-900 text-white rounded-xl font-bold text-xs hover:bg-stone-800 transition">Continue Shopping</button>
                   </div>
 
@@ -6274,19 +6664,18 @@
                       onClick={() => handleCancelCustomerOrder(orderSuccessData.orderId)}
                       className="w-full py-2.5 border border-red-300 bg-red-50/70 hover:bg-red-100 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
                     >
-                      <span>❌</span>
+                      <span>&times;</span>
                       <span>Cancel This Order</span>
                     </button>
                   ) : (
                     <div className="bg-red-50 border border-red-200 text-red-800 p-2.5 rounded-xl text-xs font-bold text-center">
-                      ❌ Order Cancelled on {orderSuccessData.cancelledAt || "Recently"}
+                      Order Cancelled on {orderSuccessData.cancelledAt || "Recently"}
                     </div>
                   )}
                 </div>
               </div>
             </div>
           )}
-
           {/* ================= CUSTOMER TRACK & CANCEL ORDER MODAL ================= */}
           {showTrackOrderModal && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -6363,9 +6752,34 @@
                     ) : (
                       <div className="space-y-3 pt-1">
                         <div className="bg-white p-3 rounded-xl border border-stone-200 space-y-1.5">
+                          {trackedOrder.status && trackedOrder.status.includes("Awaiting Payment Verification") && (
+                            <div className="bg-amber-50 border border-amber-300 text-amber-950 p-2.5 rounded-xl text-xs font-semibold space-y-1">
+                              <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                                <span>&#9203;</span>
+                                <span>Awaiting Bank Verification</span>
+                              </div>
+                              <div className="text-[11px] text-amber-800">
+                                Your submitted UTR (<span className="font-mono font-bold">{trackedOrder.utrNumber}</span>) is being verified against our bank statement. Packaging will commence as soon as payment is confirmed.
+                              </div>
+                            </div>
+                          )}
+
+                          {trackedOrder.status && trackedOrder.status.includes("Rejected") && (
+                            <div className="bg-red-50 border border-red-300 text-red-950 p-2.5 rounded-xl text-xs font-semibold space-y-1">
+                              <div className="font-bold flex items-center gap-1.5 text-red-900">
+                                <span>&times;</span>
+                                <span>Order Rejected: Unpaid Transaction</span>
+                              </div>
+                              <div className="text-[11px] text-red-800">
+                                {trackedOrder.rejectionReason || "Payment could not be verified in store bank account."}
+                              </div>
+                            </div>
+                          )}
+
                           <div className="text-[11px] font-bold text-stone-700 flex justify-between">
                             <span>Delivery Status:</span>
-                            <span className="text-amber-800 font-extrabold">{trackedOrder.status.replace(" (Auto-Verified)", "")}</span>
+                            <span className="text-amber-800 font-extrabold">{trackedOrder.status.replace(" (Auto-Verified)", "").replace(" (Verified by Owner)", "")}</span>
+                          </div>
                           </div>
                           <div className="grid grid-cols-4 gap-1 text-center pt-1">
                             {["Packed", "Dispatched", "Out for Delivery", "Delivered"].map((st, idx) => {
