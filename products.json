@@ -248,44 +248,6 @@
     "tagline": ""
   },
   {
-    "id": "spice-04",
-    "name": "Pampore Grade-A Kashmiri Mongra Saffron (Kesar)",
-    "category": "Spices",
-    "subCategory": "Exotic Spices",
-    "tag": "GI Certified",
-    "spiceLevel": 1,
-    "description": "Hand-picked pure deep crimson stigmas of saffron flowers from Pampore, Kashmir. Regal aroma and radiant golden tint for biryani, kheer, and badam milk.",
-    "dietary": [
-      "100% Genuine Mongra",
-      "Grade-A Export Quality"
-    ],
-    "rating": 5,
-    "reviewsCount": 188,
-    "image": "https://images.unsplash.com/photo-1608797178974-15b35a64a30a?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "1 Gram Glass Vial",
-        "price": 390,
-        "originalPrice": 480,
-        "weight": "1 Gram Glass Vial"
-      },
-      {
-        "size": "2 Grams Velvet Box",
-        "price": 740,
-        "originalPrice": 920,
-        "weight": "2 Grams Velvet Box"
-      }
-    ],
-    "ingredients": "100% Natural Kashmiri Mongra Saffron Threads.",
-    "shelfLife": "24 Months",
-    "images": [
-      "https://images.unsplash.com/photo-1608797178974-15b35a64a30a?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
-    ],
-    "stock": 20,
-    "tagline": ""
-  },
-  {
     "id": "pickle-01",
     "name": "Grandma's Sun-Dried Mango Pickle (Khatta-Teekha Aam Achaar)",
     "category": "Pickles",
@@ -375,44 +337,6 @@
     ],
     "stock": 20,
     "tagline": "Experience the authentic flavors of coastal India with our premium Prawns Pickle, a handcrafted delicacy rooted in traditional Konkan culinary heritage."
-  },
-  {
-    "id": "pickle-03",
-    "name": "Desi Lahsun Teekha Achaar (Spicy Garlic & Mustard Pickle)",
-    "category": "Pickles",
-    "subCategory": "Spicy & Rustic",
-    "tag": "Immunity Booster",
-    "spiceLevel": 4,
-    "description": "Peeled country garlic pods tempered with crushed yellow mustard seeds, curry leaves, and spicy red flakes. Pairs heavenly with parathas and dal chawal.",
-    "dietary": [
-      "Rich in Allicin",
-      "No Added Vinegar"
-    ],
-    "rating": 4.9,
-    "reviewsCount": 210,
-    "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
-    "variants": [
-      {
-        "size": "250g Jar",
-        "price": 210,
-        "originalPrice": 260,
-        "weight": "250g Jar"
-      },
-      {
-        "size": "500g Jar",
-        "price": 380,
-        "originalPrice": 470,
-        "weight": "500g Jar"
-      }
-    ],
-    "ingredients": "Desi Garlic, Mustard Seeds, Cold-Pressed Mustard Oil, Fenugreek, Red Chilli, Turmeric, Salt.",
-    "shelfLife": "12 Months",
-    "images": [
-      "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=800&q=80"
-    ],
-    "stock": 20,
-    "tagline": ""
   },
   {
     "id": "pickle-04",
