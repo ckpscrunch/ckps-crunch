@@ -762,6 +762,23 @@
         alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
       };
 
+      // Owner Handler to Update Order Delivery Status (Packed, Dispatched, Out for Delivery, Delivered)
+      const handleUpdateOrderStatus = (orderId, newStatus) => {
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId) {
+            return { ...o, status: newStatus };
+          }
+          return o;
+        }));
+        if (trackedOrder && trackedOrder.orderId === orderId) {
+          setTrackedOrder(prev => ({ ...prev, status: newStatus }));
+        }
+        if (orderSuccessData && orderSuccessData.orderId === orderId) {
+          setOrderSuccessData(prev => ({ ...prev, status: newStatus }));
+        }
+        setHasUnpublishedChanges(true);
+      };
+
       // Owner Handlers to Delete Past Transactions & Order History
       const handleDeleteOrder = (orderId) => {
         if (!isEditor) return;
@@ -2260,14 +2277,39 @@
                                 <span className="font-black text-sm text-stone-900">{order.orderId}</span>
                                 <span className="text-stone-400 ml-2">({order.date} {order.time || ""})</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`font-bold px-2.5 py-0.5 rounded text-[10px] ${
-                                  order.status === "Cancelled by Customer"
-                                    ? "bg-red-100 text-red-900 border border-red-300"
-                                    : "bg-emerald-100 text-emerald-900"
-                                }`}>
-                                  {order.status === "Cancelled by Customer" ? "Cancelled by Customer" : order.status}
-                                </span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {order.status === "Cancelled by Customer" ? (
+                                  <span className="font-bold px-2.5 py-0.5 rounded text-[10px] bg-red-100 text-red-900 border border-red-300">
+                                    Cancelled by Customer
+                                  </span>
+                                ) : (
+                                  <div className="flex items-center gap-1 bg-white border border-stone-300 rounded-lg px-2 py-0.5 shadow-xs">
+                                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Status:</span>
+                                    <select
+                                      value={order.status}
+                                      onChange={(e) => handleUpdateOrderStatus(order.orderId, e.target.value)}
+                                      className={`text-[11px] font-bold rounded px-1.5 py-0.5 border cursor-pointer focus:outline-none ${
+                                        order.status === "Delivered"
+                                          ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                                          : order.status === "Out for Delivery"
+                                          ? "bg-sky-100 text-sky-900 border-sky-300"
+                                          : order.status === "Dispatched"
+                                          ? "bg-indigo-100 text-indigo-900 border-indigo-300"
+                                          : order.status === "Packed"
+                                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                                          : "bg-stone-100 text-stone-900 border-stone-300"
+                                      }`}
+                                      title="Update delivery status for this order"
+                                    >
+                                      <option value="Payment Confirmed (Auto-Verified)">Payment Confirmed</option>
+                                      <option value="Packed">Packed</option>
+                                      <option value="Dispatched">Dispatched</option>
+                                      <option value="Out for Delivery">Out for Delivery</option>
+                                      <option value="Delivered">Delivered</option>
+                                      <option value="Cancelled by Customer">Cancelled</option>
+                                    </select>
+                                  </div>
+                                )}
                                 <span className="text-base font-black text-stone-900">&#8377;{order.total}</span>
                                 <button
                                   type="button"
@@ -5715,15 +5757,40 @@
                         {trackedOrder.cancellationReason && <div>Reason: "{trackedOrder.cancellationReason}"</div>}
                       </div>
                     ) : (
-                      <div className="pt-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCancelCustomerOrder(trackedOrder.orderId)}
-                          className="w-full py-2.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
-                        >
-                          <span>❌</span>
-                          <span>Cancel This Order</span>
-                        </button>
+                    ) : (
+                      <div className="space-y-3 pt-1">
+                        <div className="bg-white p-3 rounded-xl border border-stone-200 space-y-1.5">
+                          <div className="text-[11px] font-bold text-stone-700 flex justify-between">
+                            <span>Delivery Status:</span>
+                            <span className="text-amber-800 font-extrabold">{trackedOrder.status.replace(" (Auto-Verified)", "")}</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1 text-center pt-1">
+                            {["Packed", "Dispatched", "Out for Delivery", "Delivered"].map((st, idx) => {
+                              const stepOrder = ["Payment Confirmed", "Packed", "Dispatched", "Out for Delivery", "Delivered"];
+                              const curName = trackedOrder.status.replace(" (Auto-Verified)", "");
+                              const currentIdx = stepOrder.indexOf(curName);
+                              const isDone = currentIdx >= (idx + 1);
+                              return (
+                                <div key={st} className={`p-1.5 rounded-lg text-[10px] font-bold border transition ${
+                                  isDone ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-stone-50 text-stone-400 border-stone-200"
+                                }`}>
+                                  {isDone ? "&#10003; " : ""}{st}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelCustomerOrder(trackedOrder.orderId)}
+                            className="w-full py-2.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
+                          >
+                            <span>&#10060;</span>
+                            <span>Cancel This Order</span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
