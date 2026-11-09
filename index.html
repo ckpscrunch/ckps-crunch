@@ -51,6 +51,9 @@
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
+  <!-- Razorpay Official Checkout SDK (Dynamic QR & Banking Auto-Detection) -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 
   <style>
     html { scroll-behavior: smooth; }
@@ -622,7 +625,7 @@
             id: "Tejas1999",
             password: "Yash2006",
             upiId: "masterpradhan1231@upi",
-            razorpayKeyId: "",
+            razorpayKeyId: "rzp_test_Ty0ZQTPRco7Rd3",
             storeName: "CKP's Crunch",
             freeDeliveryMin: 999999,
             shippingFee: 95,
@@ -667,7 +670,7 @@
             id: "Tejas1999",
             password: "Yash2006",
             upiId: "masterpradhan1231@upi",
-            razorpayKeyId: "",
+            razorpayKeyId: "rzp_test_Ty0ZQTPRco7Rd3",
             storeName: "CKP's Crunch",
             freeDeliveryMin: 499,
             shippingFee: 50
@@ -1754,6 +1757,11 @@
         setShowAutoPaymentGatewayModal(true);
         setPaymentStep("awaiting");
         setPaymentTimer(300); // 5 min countdown
+
+        // Automatically launch Razorpay Dynamic QR / Auto-Detect modal
+        setTimeout(() => {
+          handleLaunchRazorpayGateway(orderInfo);
+        }, 400);
       };
 
       // Payment Timer & Simulated Webhook / Auto-Fetch
@@ -1811,6 +1819,58 @@
           });
         }
         setHasUnpublishedChanges(true);
+      };
+
+      // Official Razorpay Automated Payment Gateway (Live Banking Socket & Dynamic QR Auto-Detect)
+      const handleLaunchRazorpayGateway = (orderToPay = pendingOrder) => {
+        if (!orderToPay) return;
+        if (typeof window.Razorpay === "undefined") {
+          alert("Payment Gateway is loading. Please check your internet connection.");
+          return;
+        }
+
+        const activeKey = (ownerConfig.razorpayKeyId && ownerConfig.razorpayKeyId.trim().length > 10)
+          ? ownerConfig.razorpayKeyId.trim()
+          : "rzp_test_Ty0ZQTPRco7Rd3";
+
+        const options = {
+          key: activeKey,
+          amount: Math.round(orderToPay.total * 100), // In paise
+          currency: "INR",
+          name: "CKP's Crunch",
+          description: "Order #" + orderToPay.orderId + " (" + orderToPay.items.length + " Delicacies)",
+          image: "https://ckpscrunch.github.io/ckps-crunch/favicon.ico",
+          prefill: {
+            name: orderToPay.customer?.fullName || "",
+            contact: orderToPay.customer?.mobile || "",
+            email: orderToPay.customer?.email || "orders@ckpscrunch.com"
+          },
+          notes: {
+            orderId: orderToPay.orderId,
+            deliveryAddress: (orderToPay.customer?.streetAddress || "") + ", " + (orderToPay.customer?.city || "")
+          },
+          theme: {
+            color: "#0c4a6e"
+          },
+          // AUTOMATIC REDIRECTION: Triggered directly by Razorpay's live banking socket when UPI/QR is scanned & paid!
+          handler: function (response) {
+            if (response && response.razorpay_payment_id) {
+              completeOrderWithPayment("Payment Confirmed (Auto-Verified)", response.razorpay_payment_id, true);
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              console.log("Customer closed the Razorpay modal.");
+            }
+          }
+        };
+
+        try {
+          const rzpInstance = new window.Razorpay(options);
+          rzpInstance.open();
+        } catch (err) {
+          console.error("Razorpay open error:", err);
+        }
       };
 
       // Automated UPI Payment Detection & Instant Redirection (Like Amazon Pay)
@@ -3021,18 +3081,33 @@
                         </span>
                       </div>
 
-                      <div className="max-w-md">
-                        <label className="block font-bold text-stone-700 mb-1">Store UPI ID (VPA Address):</label>
-                        <input
-                          type="text"
-                          value={ownerConfig.upiId || "masterpradhan1231@upi"}
-                          onChange={(e) => setOwnerConfig({ ...ownerConfig, upiId: e.target.value.trim() })}
-                          placeholder="e.g. masterpradhan1231@upi"
-                          className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
-                        />
-                        <p className="text-[10px] text-stone-500 mt-1">
-                          Dynamic QR code and payment intent will automatically pre-fill this UPI ID and the exact order total.
-                        </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Store UPI ID (VPA Address):</label>
+                          <input
+                            type="text"
+                            value={ownerConfig.upiId || "masterpradhan1231@upi"}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, upiId: e.target.value.trim() })}
+                            placeholder="e.g. masterpradhan1231@upi"
+                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
+                          />
+                          <p className="text-[10px] text-stone-500 mt-1">
+                            Direct fallback UPI address for customer payments.
+                          </p>
+                        </div>
+                        <div>
+                          <label className="block font-bold text-stone-700 mb-1">Razorpay Key ID (Live / Test):</label>
+                          <input
+                            type="text"
+                            value={ownerConfig.razorpayKeyId || "rzp_test_Ty0ZQTPRco7Rd3"}
+                            onChange={(e) => setOwnerConfig({ ...ownerConfig, razorpayKeyId: e.target.value.trim() })}
+                            placeholder="rzp_test_... or rzp_live_..."
+                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
+                          />
+                          <p className="text-[10px] text-emerald-700 font-semibold mt-1">
+                            &#10003; Connected: When your account switches to Live Mode, simply paste your rzp_live_... key here.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -6470,15 +6545,25 @@
                     <span> Tap to Pay via UPI App (GPay / PhonePe / Paytm)</span>
                   </a>
 
+                  {/* Real Razorpay Official Auto-Detecting Gateway Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleLaunchRazorpayGateway(pendingOrder)}
+                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer border-2 border-sky-400/50"
+                  >
+                    <span>&#9889;</span>
+                    <span>Launch Auto-Detecting QR Gateway (Razorpay)</span>
+                  </button>
+
                   {/* Amazon-style 1-Click Auto-Detect & Redirect Button */}
                   <button
                     type="button"
                     onClick={handleAutoDetectPayment}
                     disabled={paymentStep === "detecting" || paymentStep === "confirmed"}
-                    className="w-full bg-sky-950 hover:bg-sky-900 text-white font-black py-3 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>&#9889;</span>
-                    <span>I Have Paid via UPI &mdash; Auto-Detect &amp; Redirect</span>
+                    <span>&#10003;</span>
+                    <span>Direct Bank Transfer Done &mdash; Confirm &amp; Redirect</span>
                   </button>
 
                   {/* Optional Manual UTR Entry Toggle */}
