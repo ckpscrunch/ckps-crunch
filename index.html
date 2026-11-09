@@ -51,8 +51,6 @@
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-  <!-- Razorpay Standard Checkout SDK (Live Dynamic QR & Bank Webhook Auto-Detection) -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
   <style>
     html { scroll-behavior: smooth; }
@@ -1814,65 +1812,6 @@
         setHasUnpublishedChanges(true);
       };
 
-      // Real Automated Live Gateway (Razorpay Dynamic QR & Bank Webhook Auto-Detection)
-      const handleLaunchRazorpayGateway = () => {
-        if (!pendingOrder) return;
-        if (typeof window.Razorpay === "undefined") {
-          alert("Payment gateway is loading. Please check internet connection or use Direct UPI below.");
-          return;
-        }
-
-        // Use configured Razorpay Key ID or fallback test gateway key
-        const rzpKey = (ownerConfig.razorpayKeyId && ownerConfig.razorpayKeyId.trim().length > 6)
-          ? ownerConfig.razorpayKeyId.trim()
-          : "rzp_test_51111111111111";
-
-        const options = {
-          key: rzpKey,
-          amount: Math.round(pendingOrder.total * 100), // In paise
-          currency: "INR",
-          name: "CKP's Crunch",
-          description: "Order #" + pendingOrder.orderId + " (" + pendingOrder.items.length + " Delicacies)",
-          image: "https://ckpscrunch.github.io/ckps-crunch/favicon.ico",
-          prefill: {
-            name: pendingOrder.customer?.fullName || "",
-            contact: pendingOrder.customer?.mobile || "",
-            email: pendingOrder.customer?.email || "orders@ckpscrunch.com"
-          },
-          notes: {
-            orderId: pendingOrder.orderId,
-            deliveryAddress: (pendingOrder.customer?.streetAddress || "") + ", " + (pendingOrder.customer?.city || "")
-          },
-          theme: {
-            color: "#0c4a6e"
-          },
-          // REAL BANK NETWORK HANDLER: ONLY FIRES WHEN PAYMENT IS ACTUALLY COMPLETED!
-          handler: function (response) {
-            if (response && response.razorpay_payment_id) {
-              completeOrderWithPayment("Payment Confirmed (Auto-Verified)", response.razorpay_payment_id, true);
-            } else {
-              alert("Payment could not be verified by the banking network. Please try again.");
-            }
-          },
-          modal: {
-            ondismiss: function () {
-              console.log("Customer closed the payment gateway without completing payment.");
-            }
-          }
-        };
-
-        try {
-          const rzpInstance = new window.Razorpay(options);
-          rzpInstance.on("payment.failed", function (resp) {
-            alert("Payment Failed: " + (resp.error?.description || "Bank declined transaction. Please retry."));
-          });
-          rzpInstance.open();
-        } catch (err) {
-          console.error("Razorpay error:", err);
-          alert("Could not open automated gateway: " + (err.message || "Please use Option B (Direct UPI) below."));
-        }
-      };
-
       // Direct Bank UPI Submission with Genuine 12-Digit Bank UTR Verification
       const handleSubmitUtrPayment = (e) => {
         if (e && e.preventDefault) e.preventDefault();
@@ -3045,50 +2984,34 @@
                       </div>
                     </div>
 
-                    {/* PAYMENT GATEWAY & UPI QR SETTINGS */}
-                    <div className="bg-gradient-to-r from-sky-50 to-amber-50 p-5 rounded-2xl border border-sky-200 space-y-4">
+                    {/* DIRECT BANK UPI PAYMENT SETTINGS */}
+                    <div className="bg-gradient-to-r from-emerald-50 to-sky-50 p-5 rounded-2xl border border-emerald-200 space-y-4">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
                           <h4 className="font-bold text-stone-900 text-sm flex items-center gap-2">
-                            <span>&#128179;</span> Payment Gateway &amp; UPI QR Settings
+                            <span>&#128179;</span> Store UPI QR &amp; Payment Settings
                           </h4>
                           <p className="text-[11px] text-stone-600 mt-0.5">
-                            Configure your automated payment gateway credentials and store UPI ID.
+                            Customer payments go directly to this UPI address with 0% gateway commission fees.
                           </p>
                         </div>
-                        <span className="bg-sky-100 text-sky-900 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">
-                          Live Payment Engine
+                        <span className="bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase">
+                          Direct Bank UPI
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block font-bold text-stone-700 mb-1">Direct Bank UPI ID (VPA):</label>
-                          <input
-                            type="text"
-                            value={ownerConfig.upiId || "masterpradhan1231@upi"}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, upiId: e.target.value.trim() })}
-                            placeholder="e.g. masterpradhan1231@upi"
-                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
-                          />
-                          <p className="text-[10px] text-stone-500 mt-1">
-                            Displayed for Option B (Direct UPI transfer). Customers must submit an authentic 12-digit UTR receipt.
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="block font-bold text-stone-700 mb-1">Razorpay Key ID (For 100% Automated QR Detection):</label>
-                          <input
-                            type="text"
-                            value={ownerConfig.razorpayKeyId || ""}
-                            onChange={(e) => setOwnerConfig({ ...ownerConfig, razorpayKeyId: e.target.value.trim() })}
-                            placeholder="e.g. rzp_live_xxxxxxxx or rzp_test_xxxxxxxx"
-                            className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
-                          />
-                          <p className="text-[10px] text-stone-500 mt-1">
-                            Free from razorpay.com. Powers Option A with instant dynamic QR code bank auto-detection.
-                          </p>
-                        </div>
+                      <div className="max-w-md">
+                        <label className="block font-bold text-stone-700 mb-1">Store UPI ID (VPA Address):</label>
+                        <input
+                          type="text"
+                          value={ownerConfig.upiId || "masterpradhan1231@upi"}
+                          onChange={(e) => setOwnerConfig({ ...ownerConfig, upiId: e.target.value.trim() })}
+                          placeholder="e.g. masterpradhan1231@upi"
+                          className="w-full border rounded-xl p-2.5 bg-white font-mono font-bold text-xs"
+                        />
+                        <p className="text-[10px] text-stone-500 mt-1">
+                          Dynamic QR code and payment intent will automatically pre-fill this UPI ID and the exact order total.
+                        </p>
                       </div>
                     </div>
 
@@ -6446,7 +6369,7 @@
           )}
 
 
-          {/* ================= STEP 2: AUTO PAYMENT GATEWAY (AUTO-FETCH & QR) ================= */}
+          {/* ================= STEP 2: SECURE UPI & QR CODE PAYMENT GATEWAY ================= */}
           {showAutoPaymentGatewayModal && pendingOrder && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200 text-center space-y-4 p-6">
@@ -6456,89 +6379,59 @@
                   <div className="text-left">
                     <div className="flex items-center gap-2">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <h3 className="font-brand font-black text-xl text-stone-900">Secure Payment Checkout</h3>
+                      <h3 className="font-brand font-black text-xl text-stone-900">Scan &amp; Pay via UPI</h3>
                     </div>
-                    <p className="text-[11px] text-stone-500">Official UPI &amp; Dynamic QR Gateway &bull; Order #{pendingOrder.orderId}</p>
+                    <p className="text-[11px] text-stone-500">Direct Bank UPI Transfer &bull; Order #{pendingOrder.orderId}</p>
                   </div>
-                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none">&times;</button>
+                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none cursor-pointer">&times;</button>
                 </div>
 
                 {/* Amount Highlight */}
-                <div className="bg-gradient-to-r from-sky-50 via-sky-100/50 to-amber-50 p-3.5 rounded-2xl border border-sky-200 flex justify-between items-center text-left">
+                <div className="bg-gradient-to-r from-emerald-50 via-sky-50 to-amber-50 p-4 rounded-2xl border border-emerald-200 flex justify-between items-center text-left">
                   <div>
                     <div className="text-xs text-stone-600 font-semibold">Total Payable Amount:</div>
                     <div className="text-3xl font-black text-stone-950">&#8377;{pendingOrder.total}</div>
                   </div>
                   <div className="text-right">
-                    <span className="bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-2 py-0.5 rounded border border-emerald-300">
+                    <span className="bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg border border-emerald-300">
                       UPI: {ownerConfig.upiId}
                     </span>
                     <div className="text-[10px] text-stone-500 mt-1">Recipient: CKP's Crunch</div>
                   </div>
                 </div>
 
-                {/* METHOD 1: AUTOMATED LIVE GATEWAY (DYNAMIC QR AUTO-DETECTION) */}
-                <div className="bg-sky-50/70 p-4 rounded-2xl border border-sky-200 text-left space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="font-black text-xs text-sky-950 flex items-center gap-1.5">
-                      <span>&#9889;</span>
-                      <span>Option A: Automated Live QR / UPI Gateway</span>
-                    </div>
-                    <span className="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      Auto-Detects Payment
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-sky-900/80">
-                    Scans dynamic QR code or opens GPay/PhonePe/Paytm. Bank network auto-verifies payment in seconds with zero manual typing.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleLaunchRazorpayGateway}
-                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-black py-3 px-4 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>&#9889;</span>
-                    <span>Launch Live Auto-Detecting Gateway (&#8377;{pendingOrder.total})</span>
-                  </button>
-                </div>
-
-                {/* DIVIDER */}
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-stone-200"></div>
-                  <span className="flex-shrink mx-3 text-stone-400 text-[11px] font-bold uppercase tracking-wider">OR DIRECT BANK UPI</span>
-                  <div className="flex-grow border-t border-stone-200"></div>
-                </div>
-
-                {/* METHOD 2: DIRECT BANK UPI QR + 12-DIGIT UTR VERIFICATION */}
+                {/* QR Code and Mobile One-Tap Payment Box */}
                 <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 text-left">
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                      <span>&#127974;</span>
-                      <span>Option B: Direct UPI QR Scan &amp; 12-Digit Bank UTR</span>
-                    </div>
-                    <span className="text-[10px] text-stone-500 font-mono">{ownerConfig.upiId}</span>
-                  </div>
-
                   <div className="flex flex-col sm:flex-row items-center gap-4 bg-white p-3 rounded-xl border border-stone-200">
                     {/* Dynamic Order QR Code */}
                     <div className="flex-shrink-0 text-center">
-                      <img src={upiQrUrl} alt="Direct UPI QR Code" className="w-36 h-36 mx-auto rounded-lg border border-stone-200 shadow-xs" />
-                      <span className="text-[10px] text-stone-500 font-semibold block mt-1">Scan via any UPI App</span>
+                      <img src={upiQrUrl} alt="Direct UPI QR Code" className="w-40 h-40 mx-auto rounded-lg border border-stone-200 shadow-sm" />
+                      <span className="text-[10px] text-stone-500 font-semibold block mt-1.5">Scan via any UPI App</span>
                     </div>
 
-                    <div className="text-xs space-y-2 flex-1">
-                      <div className="text-stone-700 space-y-1 text-[11px]">
-                        <div><strong>1.</strong> Scan the QR or tap below on your mobile.</div>
-                        <div><strong>2.</strong> Complete payment of <strong>&#8377;{pendingOrder.total}</strong>.</div>
-                        <div><strong>3.</strong> Copy the <strong>12-digit UTR / Ref No.</strong> from your UPI app receipt and enter it below.</div>
+                    <div className="text-xs space-y-2.5 flex-1">
+                      <div className="text-stone-700 space-y-1.5 text-[11px]">
+                        <div className="flex items-start gap-1.5">
+                          <span className="bg-emerald-100 text-emerald-900 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">1</span>
+                          <span>Scan the QR code with Google Pay, PhonePe, Paytm, or BHIM.</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="bg-emerald-100 text-emerald-900 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">2</span>
+                          <span>Complete payment of <strong>&#8377;{pendingOrder.total}</strong> to <strong>{ownerConfig.upiId}</strong>.</span>
+                        </div>
+                        <div className="flex items-start gap-1.5">
+                          <span className="bg-emerald-100 text-emerald-900 font-bold rounded-full w-4 h-4 flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">3</span>
+                          <span>Copy the <strong>12-digit UTR / Bank Ref No.</strong> from your payment receipt and enter it below.</span>
+                        </div>
                       </div>
 
                       {/* Deep link for mobile users (ONLY opens app, NO fake confirmation) */}
                       <a
                         href={dynamicUpiUri}
-                        className="inline-flex items-center justify-center gap-1.5 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2 px-3 rounded-lg text-xs shadow-xs transition"
+                        className="inline-flex items-center justify-center gap-1.5 w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 px-3 rounded-xl text-xs shadow-xs transition"
                       >
                         <span>&#128241;</span>
-                        <span>Tap to Open UPI App (GPay / PhonePe)</span>
+                        <span>Tap to Open UPI App (GPay / PhonePe / Paytm)</span>
                       </a>
                     </div>
                   </div>
@@ -6586,7 +6479,7 @@
                       {isVerifyingUtr ? (
                         <span>Verifying UTR Reference...</span>
                       ) : (
-                        <span>&#10003; Submit 12-Digit UTR &amp; Place Order</span>
+                        <span>&#10003; Submit 12-Digit UTR &amp; Confirm Order</span>
                       )}
                     </button>
                     <p className="text-[10px] text-stone-500 text-center">
