@@ -764,10 +764,10 @@
       const [showLoginModal, setShowLoginModal] = useState(false);
       const [showProfileModal, setShowProfileModal] = useState(false);
       const [showCheckoutDetailsModal, setShowCheckoutDetailsModal] = useState(false);
-      const [showAutoPaymentGatewayModal, setShowAutoPaymentGatewayModal] = useState(false);
       const [quickViewProduct, setQuickViewProduct] = useState(null);
       const [detailVariantIdx, setDetailVariantIdx] = useState(0);
       const [detailQty, setDetailQty] = useState(1);
+      const [paymentSuccessToast, setPaymentSuccessToast] = useState(null);
 
       // Dedicated Separate Product Page Mode
       const [viewMode, setViewMode] = useState("store"); // 'store' or 'product'
@@ -779,7 +779,10 @@
       const [trackSearchInput, setTrackSearchInput] = useState("");
       const [showDeliveryRateModal, setShowDeliveryRateModal] = useState(false);
       const [trackedOrder, setTrackedOrder] = useState(null);
-      const [orderFilterTab, setOrderFilterTab] = useState("all"); // 'all', 'active', 'cancelled'
+      const [orderFilterTab, setOrderFilterTab] = useState("all"); // 'all', 'active', 'cancelled', 'pending'
+
+      // Helper: Match all cancelled orders (by customer or owner)
+      const isOrderCancelled = (o) => !!(o && (o.isCancelled === true || (o.status && o.status.toLowerCase().includes("cancel"))));
 
       // Customer Order Cancellation Handler
       const handleCancelCustomerOrder = (orderId) => {
@@ -795,7 +798,8 @@
               ...o,
               status: "Cancelled by Customer",
               cancellationReason: cleanReason,
-              cancelledAt: cancelledTimestamp
+              cancelledAt: cancelledTimestamp,
+              isCancelled: true
             };
           }
           return o;
@@ -806,7 +810,8 @@
             ...prev,
             status: "Cancelled by Customer",
             cancellationReason: cleanReason,
-            cancelledAt: cancelledTimestamp
+            cancelledAt: cancelledTimestamp,
+            isCancelled: true
           }));
         }
 
@@ -815,12 +820,49 @@
             ...prev,
             status: "Cancelled by Customer",
             cancellationReason: cleanReason,
-            cancelledAt: cancelledTimestamp
+            cancelledAt: cancelledTimestamp,
+            isCancelled: true
           }));
         }
 
         setHasUnpublishedChanges(true);
         alert(`Order #${orderId} has been successfully cancelled! The store owner has been notified.`);
+      };
+
+      // Owner Order Cancellation Handler
+      const handleOwnerCancelOrder = (orderId) => {
+        if (!isEditor) return;
+        const reason = prompt(`Enter cancellation reason for order #${orderId}:`, "Item out of stock / Unfulfillable address");
+        if (reason === null) return;
+
+        const cancelledTimestamp = new Date().toLocaleString("en-IN");
+        const cleanReason = reason.trim() || "Cancelled by store owner";
+
+        setOrders(prev => prev.map(o => {
+          if (o.orderId === orderId) {
+            return {
+              ...o,
+              status: "Cancelled by Owner",
+              cancellationReason: cleanReason,
+              cancelledAt: cancelledTimestamp,
+              isCancelled: true
+            };
+          }
+          return o;
+        }));
+
+        if (trackedOrder && trackedOrder.orderId === orderId) {
+          setTrackedOrder(prev => ({
+            ...prev,
+            status: "Cancelled by Owner",
+            cancellationReason: cleanReason,
+            cancelledAt: cancelledTimestamp,
+            isCancelled: true
+          }));
+        }
+
+        setHasUnpublishedChanges(true);
+        alert(`Order #${orderId} has been marked as Cancelled by Owner.`);
       };
 
       // Owner Handler to Update Order Delivery Status (Packed, Dispatched, Out for Delivery, Delivered)
@@ -924,13 +966,13 @@
 
       const handleClearCancelledOrders = () => {
         if (!isEditor) return;
-        const count = orders.filter(o => o.status === "Cancelled by Customer").length;
+        const count = orders.filter(isOrderCancelled).length;
         if (count === 0) {
           alert("There are no cancelled orders to remove.");
           return;
         }
         if (confirm(`Delete all ${count} cancelled order transactions from history?`)) {
-          setOrders(prev => prev.filter(o => o.status !== "Cancelled by Customer"));
+          setOrders(prev => prev.filter(o => !isOrderCancelled(o)));
           setHasUnpublishedChanges(true);
         }
       };
@@ -1731,62 +1773,65 @@
         setShowCheckoutDetailsModal(true);
       };
 
-      // Submit Address Details -> Launch Auto Payment Gateway with QR Code
+      // Submit Address Details -> Directly and Immediately Launch Razorpay Payment Gateway
       const handleDetailsSubmit = (e) => {
         e.preventDefault();
         if (!checkoutForm.fullName || !checkoutForm.mobile || !checkoutForm.streetAddress || !checkoutForm.pincode) {
-          alert("Please fill all address fields.");
+          alert("Please fill all required address fields.");
           return;
         }
 
         const orderId = "CKP-" + Math.floor(100000 + Math.random() * 900000);
+        const now = new Date();
+        const uid = currentUser ? (currentUser.mobile || currentUser.id) : checkoutForm.mobile;
+
         const orderInfo = {
           orderId,
-          date: new Date().toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          date: now.toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          time: now.toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' }),
           customer: { ...checkoutForm },
+          customerName: checkoutForm.fullName,
+          customerMobile: checkoutForm.mobile,
+          mobile: checkoutForm.mobile,
+          phone: checkoutForm.mobile,
+          userId: uid,
           items: [...cart],
           subtotal: cartSubtotal,
           shipping: shippingCharge,
           total: cartTotal,
-          paymentMethod: "UPI Instant Auto-Pay",
-          status: "Awaiting UPI Payment"
+          paymentMethod: "Razorpay Official Gateway",
+          status: "Payment Confirmed (Auto-Verified)"
         };
 
         setPendingOrder(orderInfo);
         setShowCheckoutDetailsModal(false);
-        setShowAutoPaymentGatewayModal(true);
-        setPaymentStep("awaiting");
-        setPaymentTimer(300); // 5 min countdown
 
-        // Automatically launch Razorpay Dynamic QR / Auto-Detect modal
-        setTimeout(() => {
-          handleLaunchRazorpayGateway(orderInfo);
-        }, 400);
+        // Directly launch Razorpay Standard Checkout overlay on screen!
+        handleLaunchRazorpayGateway(orderInfo);
       };
 
-      // Payment Timer & Simulated Webhook / Auto-Fetch
-      useEffect(() => {
-        let interval = null;
-        if (showAutoPaymentGatewayModal && paymentStep === "awaiting" && paymentTimer > 0) {
-          interval = setInterval(() => {
-            setPaymentTimer(t => t - 1);
-          }, 1000);
-        }
-        return () => clearInterval(interval);
-      }, [showAutoPaymentGatewayModal, paymentStep, paymentTimer]);
+      // Complete Order helper: Handles verified Razorpay transactions & redirects to home page
+      const completeOrderWithPayment = (finalStatus, utrReference, isAutoVerified, orderToUse = pendingOrder) => {
+        const currentOrder = orderToUse || pendingOrder;
+        if (!currentOrder) return;
 
-      // Complete Order helper: Handles real verified transactions & genuine UTR submissions
-      const completeOrderWithPayment = (finalStatus, utrReference, isAutoVerified) => {
+        const uid = currentUser ? (currentUser.mobile || currentUser.id) : (currentOrder.mobile || currentOrder.customer?.mobile);
+
         const finalOrder = {
-          ...pendingOrder,
+          ...currentOrder,
           status: finalStatus,
           utrNumber: utrReference,
           isVerified: !!isAutoVerified,
-          paymentMethod: isAutoVerified ? "Automated Live Gateway (Razorpay)" : "Direct Bank UPI (masterpradhan1231@upi)",
-          confirmedAt: new Date().toLocaleString("en-IN")
+          paymentMethod: "Razorpay Official Gateway",
+          razorpayPaymentId: utrReference,
+          confirmedAt: new Date().toLocaleString("en-IN"),
+          userId: uid,
+          customerName: currentOrder.customer?.fullName || currentOrder.customerName,
+          phone: currentOrder.customer?.mobile || currentOrder.mobile,
+          mobile: currentOrder.customer?.mobile || currentOrder.mobile
         };
 
-        // Deduct inventory stock
+        // 1. Deduct inventory stock
         setProducts(prev => {
           return prev.map(prod => {
             const matches = finalOrder.items.filter(i => i.productId === prod.id);
@@ -1798,34 +1843,58 @@
           });
         });
 
-        // Save to Master Orders list
-        setOrders(prev => [finalOrder, ...prev]);
+        // 2. Save into Master Orders list (stored in ckp_orders_v6 via useEffect)
+        setOrders(prev => [finalOrder, ...prev.filter(o => o.orderId !== finalOrder.orderId)]);
 
-        if (typeof confetti === "function") {
-          confetti({ particleCount: 130, spread: 80, origin: { y: 0.6 } });
-        }
-
-        setShowAutoPaymentGatewayModal(false);
-        setOrderSuccessData(finalOrder);
-        setCart([]);
-        setEnteredUtr("");
-        setUtrError("");
-        if (currentUser && (currentUser.mobile || currentUser.id)) {
-          const uid = currentUser.mobile || currentUser.id;
-          safeSetItem("ckp_user_cart_" + uid, JSON.stringify([]));
+        // 3. Persist order inside registered customer user profile if registered / logged in
+        if (uid) {
           setRegisteredUsers(prev => {
-            if (!prev[uid]) return prev;
-            return { ...prev, [uid]: { ...prev[uid], cart: [] } };
+            const existingUser = prev[uid] || {};
+            const userOrders = existingUser.orders || [];
+            const updatedUser = {
+              ...existingUser,
+              cart: [],
+              orders: [finalOrder, ...userOrders.filter(o => o.orderId !== finalOrder.orderId)]
+            };
+            const newRegistered = { ...prev, [uid]: updatedUser };
+            safeSetItem("ckp_users_v6", JSON.stringify(newRegistered));
+            return newRegistered;
           });
+          safeSetItem("ckp_user_cart_" + uid, JSON.stringify([]));
         }
+
+        // 4. Clear current cart
+        setCart([]);
+        safeSetItem("ckp_cart_v6", JSON.stringify([]));
+
+        // 5. Confetti celebration
+        if (typeof confetti === "function") {
+          confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 } });
+        }
+
+        // 6. Close checkout & reset pending order
+        setShowCheckoutDetailsModal(false);
+        setPendingOrder(null);
+
+        // 7. REDIRECT DIRECTLY TO HOME PAGE
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        // 8. Set top home-page celebratory confirmation banner
+        setPaymentSuccessToast({
+          orderId: finalOrder.orderId,
+          total: finalOrder.total,
+          paymentId: utrReference,
+          itemsCount: finalOrder.items.length
+        });
+
         setHasUnpublishedChanges(true);
       };
 
-      // Official Razorpay Automated Payment Gateway (Live Banking Socket & Dynamic QR Auto-Detect)
+      // Official Razorpay Automated Payment Gateway (With prominent UPI / Dynamic QR Code flows)
       const handleLaunchRazorpayGateway = (orderToPay = pendingOrder) => {
         if (!orderToPay) return;
         if (typeof window.Razorpay === "undefined") {
-          alert("Payment Gateway is loading. Please check your internet connection.");
+          alert("Razorpay Payment Gateway is still loading. Please check your internet connection and try again.");
           return;
         }
 
@@ -1838,24 +1907,53 @@
           amount: Math.round(orderToPay.total * 100), // In paise
           currency: "INR",
           name: "CKP's Crunch",
-          description: "Order #" + orderToPay.orderId + " (" + orderToPay.items.length + " Delicacies)",
+          description: "Order #" + orderToPay.orderId + " (" + orderToPay.items.length + " Items)",
           image: "https://ckpscrunch.github.io/ckps-crunch/favicon.ico",
           prefill: {
-            name: orderToPay.customer?.fullName || "",
-            contact: orderToPay.customer?.mobile || "",
+            name: orderToPay.customer?.fullName || orderToPay.customerName || "",
+            contact: orderToPay.customer?.mobile || orderToPay.mobile || "",
             email: orderToPay.customer?.email || "orders@ckpscrunch.com"
           },
           notes: {
             orderId: orderToPay.orderId,
-            deliveryAddress: (orderToPay.customer?.streetAddress || "") + ", " + (orderToPay.customer?.city || "")
+            customerName: orderToPay.customer?.fullName || orderToPay.customerName || "",
+            mobile: orderToPay.customer?.mobile || orderToPay.mobile || "",
+            deliveryAddress: (orderToPay.customer?.streetAddress || "") + ", " + (orderToPay.customer?.city || "") + " - " + (orderToPay.customer?.pincode || "")
           },
           theme: {
-            color: "#0c4a6e"
+            color: "#854d0e" // Brand Amber/Golden Brown
           },
-          // AUTOMATIC REDIRECTION: Triggered directly by Razorpay's live banking socket when UPI/QR is scanned & paid!
+          // Direct QR Code & UPI priority layout configuration
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: "Pay using UPI / Dynamic QR Code (GPay, PhonePe, Paytm, BHIM)",
+                  instruments: [
+                    {
+                      method: "upi",
+                      flows: ["qr", "intent", "collect"]
+                    }
+                  ]
+                },
+                cards: {
+                  name: "Credit / Debit Cards, Netbanking & Wallets",
+                  instruments: [
+                    { method: "card" },
+                    { method: "netbanking" },
+                    { method: "wallet" }
+                  ]
+                }
+              },
+              sequence: ["block.upi", "block.cards"],
+              preferences: {
+                show_default_blocks: true
+              }
+            }
+          },
           handler: function (response) {
             if (response && response.razorpay_payment_id) {
-              completeOrderWithPayment("Payment Confirmed (Auto-Verified)", response.razorpay_payment_id, true);
+              completeOrderWithPayment("Payment Confirmed (Auto-Verified)", response.razorpay_payment_id, true, orderToPay);
             }
           },
           modal: {
@@ -1870,81 +1968,9 @@
           rzpInstance.open();
         } catch (err) {
           console.error("Razorpay open error:", err);
+          alert("Could not initialize Razorpay: " + err.message);
         }
       };
-
-      // Automated UPI Payment Detection & Instant Redirection (Like Amazon Pay)
-      const handleAutoDetectPayment = () => {
-        setPaymentStep("detecting");
-        setIsVerifyingUtr(true);
-
-        // 2-second automated UPI banking network reconciliation probe
-        setTimeout(() => {
-          setPaymentStep("confirmed");
-          setIsVerifyingUtr(false);
-
-          const generatedRef = (enteredUtr && enteredUtr.trim().length === 12)
-            ? enteredUtr.trim()
-            : "UPI-" + Math.floor(100000000000 + Math.random() * 900000000000);
-
-          setTimeout(() => {
-            completeOrderWithPayment("Payment Verified via UPI (Auto-Detected)", generatedRef, true);
-          }, 900);
-        }, 2200);
-      };
-
-      // Direct Bank UPI Submission with Genuine 12-Digit Bank UTR Verification
-      const handleSubmitUtrPayment = (e) => {
-        if (e && e.preventDefault) e.preventDefault();
-        setUtrError("");
-        const clean = (enteredUtr || "").trim().replace(/[^0-9]/g, "");
-
-        // 1. Must be exactly 12 numeric digits
-        if (clean.length !== 12) {
-          setUtrError("Bank Reference / UTR number must be exactly 12 digits (numbers only).");
-          return;
-        }
-
-        // 2. Reject fake repetitive dummy patterns
-        const dummyPatterns = [
-          "000000000000", "111111111111", "222222222222", "333333333333",
-          "444444444444", "555555555555", "666666666666", "777777777777",
-          "888888888888", "999999999999", "123456789012", "012345678901"
-        ];
-        if (dummyPatterns.includes(clean) || /^(\d)\1{11}$/.test(clean)) {
-          setUtrError("Please enter your authentic 12-digit UTR from your UPI payment receipt.");
-          return;
-        }
-
-        // 3. Reject duplicate UTRs already registered
-        const existing = orders.find(o => o.utrNumber && o.utrNumber.toString().trim() === clean);
-        if (existing) {
-          setUtrError(`This UTR (${clean}) is already recorded for Order #${existing.orderId}. Please provide the genuine receipt UTR for this transaction.`);
-          return;
-        }
-
-        setIsVerifyingUtr(true);
-        setTimeout(() => {
-          setIsVerifyingUtr(false);
-          // Save with status "Awaiting Payment Verification (UTR: ...)"
-          completeOrderWithPayment("Awaiting Payment Verification (UTR: " + clean + ")", clean, false);
-        }, 500);
-      };
-      // Dynamic UPI Intent URI
-      const dynamicUpiUri = useMemo(() => {
-        if (!pendingOrder) return "";
-        const pa = ownerConfig.upiId;
-        const pn = encodeURIComponent("CKP's Crunch");
-        const am = pendingOrder.total;
-        const tn = encodeURIComponent(`CKPs Crunch Order ${pendingOrder.orderId}`);
-        return `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
-      }, [pendingOrder, ownerConfig.upiId]);
-
-      // Dynamic QR Code URL
-      const upiQrUrl = useMemo(() => {
-        if (!dynamicUpiUri) return "";
-        return `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(dynamicUpiUri)}`;
-      }, [dynamicUpiUri]);
 
       // Employee management helpers (Owner can create login IDs & passwords, employees cannot delete owner)
       const handleAddEmployee = (e) => {
@@ -2655,24 +2681,24 @@
                           onClick={() => setOrderFilterTab("active")}
                           className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "active" ? "bg-emerald-700 text-white shadow-xs" : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"}`}
                         >
-                          Active ({orders.filter(o => o.status !== "Cancelled by Customer").length})
+                          Active ({orders.filter(o => !isOrderCancelled(o)).length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderFilterTab("cancelled")}
+                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "cancelled" ? "bg-red-700 text-white shadow-xs" : "bg-red-100 text-red-800 hover:bg-red-200 font-extrabold border border-red-300"}`}
+                        >
+                          âŒ Cancelled ({orders.filter(isOrderCancelled).length})
                         </button>
                         <button
                           type="button"
                           onClick={() => setOrderFilterTab("pending")}
                           className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "pending" ? "bg-amber-700 text-white shadow-xs" : "bg-amber-50 text-amber-900 hover:bg-amber-100"}`}
                         >
-                          Pending Verification ({orders.filter(o => (o.status && o.status.includes("Awaiting Payment Verification")) || o.isVerified === false).length})
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterTab("cancelled")}
-                          className={`px-3 py-1 rounded-lg font-bold transition ${orderFilterTab === "cancelled" ? "bg-red-700 text-white shadow-xs" : "bg-red-50 text-red-800 hover:bg-red-100"}`}
-                        >
-                          Cancelled ({orders.filter(o => o.status === "Cancelled by Customer").length})
+                          Pending ({orders.filter(o => (o.status && o.status.includes("Awaiting Payment")) || o.isVerified === false).length})
                         </button>
 
-                        {orders.some(o => o.status === "Cancelled by Customer") && (
+                        {orders.some(isOrderCancelled) && (
                           <button
                             type="button"
                             onClick={handleClearCancelledOrders}
@@ -2703,17 +2729,36 @@
                       </div>
                     ) : (
                       <div className="space-y-4">
+                        {/* Prominent Cancelled Orders Notice in Owner Portal */}
+                        {orders.some(isOrderCancelled) && orderFilterTab !== "cancelled" && (
+                          <div className="bg-red-50 border-2 border-red-300 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-red-900">
+                            <div className="flex items-center gap-2">
+                              <span>âš ï¸</span>
+                              <span>Notice: You have {orders.filter(isOrderCancelled).length} Cancelled Order(s) in system.</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setOrderFilterTab("cancelled")}
+                              className="bg-red-700 hover:bg-red-800 text-white px-3 py-1 rounded-lg text-xs font-extrabold shadow-xs transition cursor-pointer"
+                            >
+                              View All Cancelled Orders â†’
+                            </button>
+                          </div>
+                        )}
+
                         {orders
                           .filter(o => {
                             if (orderFilterTab === "all") return true;
-                            if (orderFilterTab === "cancelled") return o.status === "Cancelled by Customer";
-                            if (orderFilterTab === "pending") return (o.status && o.status.includes("Awaiting Payment Verification")) || o.isVerified === false;
-                            return o.status !== "Cancelled by Customer";
+                            if (orderFilterTab === "cancelled") return isOrderCancelled(o);
+                            if (orderFilterTab === "pending") return (o.status && o.status.includes("Awaiting Payment")) || o.isVerified === false;
+                            return !isOrderCancelled(o);
                           })
-                          .map(order => (
+                          .map(order => {
+                            const isCancelled = isOrderCancelled(order);
+                            return (
                           <div key={order.orderId} className={`p-4 rounded-2xl border text-xs space-y-2.5 transition ${
-                            order.status === "Cancelled by Customer"
-                              ? "bg-red-50/70 border-red-200 shadow-xs"
+                            isCancelled
+                              ? "bg-red-50/80 border-red-300 shadow-sm"
                               : "bg-stone-50 border-stone-200"
                           }`}>
                             <div className="flex justify-between items-center border-b pb-2">
@@ -2722,38 +2767,48 @@
                                 <span className="text-stone-400 ml-2">({order.date} {order.time || ""})</span>
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                {order.status === "Cancelled by Customer" ? (
-                                  <span className="font-bold px-2.5 py-0.5 rounded text-[10px] bg-red-100 text-red-900 border border-red-300">
-                                    Cancelled by Customer
+                                {isCancelled ? (
+                                  <span className="font-extrabold px-3 py-1 rounded-lg text-[11px] bg-red-100 text-red-900 border border-red-400 flex items-center gap-1 shadow-xs">
+                                    <span>âŒ</span> {order.status}
                                   </span>
                                 ) : (
-                                  <div className="flex items-center gap-1 bg-white border border-stone-300 rounded-lg px-2 py-0.5 shadow-xs">
-                                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Status:</span>
-                                    <select
-                                      value={order.status}
-                                      onChange={(e) => handleUpdateOrderStatus(order.orderId, e.target.value)}
-                                      className={`text-[11px] font-bold rounded px-1.5 py-0.5 border cursor-pointer focus:outline-none ${
-                                        order.status === "Delivered"
-                                          ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                                          : order.status === "Out for Delivery"
-                                          ? "bg-sky-100 text-sky-900 border-sky-300"
-                                          : order.status === "Dispatched"
-                                          ? "bg-indigo-100 text-indigo-900 border-indigo-300"
-                                          : order.status === "Packed"
-                                          ? "bg-amber-100 text-amber-900 border-amber-300"
-                                          : "bg-stone-100 text-stone-900 border-stone-300"
-                                      }`}
-                                      title="Update delivery status for this order"
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1 bg-white border border-stone-300 rounded-lg px-2 py-0.5 shadow-xs">
+                                      <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Status:</span>
+                                      <select
+                                        value={order.status}
+                                        onChange={(e) => handleUpdateOrderStatus(order.orderId, e.target.value)}
+                                        className={`text-[11px] font-bold rounded px-1.5 py-0.5 border cursor-pointer focus:outline-none ${
+                                          order.status === "Delivered"
+                                            ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                                            : order.status === "Out for Delivery"
+                                            ? "bg-sky-100 text-sky-900 border-sky-300"
+                                            : order.status === "Dispatched"
+                                            ? "bg-indigo-100 text-indigo-900 border-indigo-300"
+                                            : order.status === "Packed"
+                                            ? "bg-amber-100 text-amber-900 border-amber-300"
+                                            : "bg-stone-100 text-stone-900 border-stone-300"
+                                        }`}
+                                        title="Update delivery status for this order"
+                                      >
+                                        <option value="Payment Confirmed (Auto-Verified)">Payment Confirmed (Auto-Verified)</option>
+                                        <option value="Payment Confirmed (Verified by Owner)">Payment Confirmed (Verified by Owner)</option>
+                                        <option value="Packed">Packed</option>
+                                        <option value="Dispatched">Dispatched</option>
+                                        <option value="Out for Delivery">Out for Delivery</option>
+                                        <option value="Delivered">Delivered</option>
+                                        <option value="Cancelled by Owner">Cancelled by Owner</option>
+                                        <option value="Cancelled by Customer">Cancelled by Customer</option>
+                                      </select>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOwnerCancelOrder(order.orderId)}
+                                      className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-300 px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                                      title="Cancel this order as store owner"
                                     >
-                                      <option value="Awaiting Payment Verification">Awaiting Payment Verification</option>
-                                      <option value="Payment Confirmed (Auto-Verified)">Payment Confirmed (Auto-Verified)</option>
-                                      <option value="Payment Confirmed (Verified by Owner)">Payment Confirmed (Verified by Owner)</option>
-                                      <option value="Packed">Packed</option>
-                                      <option value="Dispatched">Dispatched</option>
-                                      <option value="Out for Delivery">Out for Delivery</option>
-                                      <option value="Delivered">Delivered</option>
-                                      <option value="Cancelled by Customer">Cancelled</option>
-                                    </select>
+                                      Cancel
+                                    </button>
                                   </div>
                                 )}
                                 <span className="text-base font-black text-stone-900">&#8377;{order.total}</span>
@@ -2845,7 +2900,8 @@
                               <strong>Items:</strong> {order.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(", ")}
                             </div>
                           </div>
-                        ))}
+                            );
+                          })}
                       </div>
                     )}
                   </div>
@@ -4213,18 +4269,27 @@
                       </button>
                     )}
 
-                    {/* Customer Track & Cancel Order Button */}
+                    {/* Customer My Orders & Delivery Tracking Button */}
                     <button
                       onClick={() => {
                         setShowTrackOrderModal(true);
-                        setTrackSearchInput("");
+                        if (currentUser) {
+                          setTrackSearchInput(currentUser.mobile || currentUser.id || "");
+                        } else {
+                          setTrackSearchInput("");
+                        }
                         setTrackedOrder(null);
                       }}
-                      className="inline-flex items-center gap-1 bg-stone-100 hover:bg-stone-200 text-stone-800 px-2.5 py-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold transition shadow-xs"
-                      title="Track or Cancel your order"
+                      className="inline-flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs border border-amber-300 cursor-pointer"
+                      title="View all your past orders, delivery status, and tracking"
                     >
-                      <span>&#128230;</span>
-                      <span className="hidden sm:inline">Track / Cancel</span>
+                      <span>ðŸ“¦</span>
+                      <span className="font-extrabold">My Orders</span>
+                      {currentUser && (
+                        <span className="bg-amber-800 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
+                          {orders.filter(o => o.userId === (currentUser.mobile || currentUser.id) || o.phone === currentUser.mobile || o.mobile === currentUser.mobile || (o.customer && o.customer.mobile === currentUser.mobile)).length}
+                        </span>
+                      )}
                     </button>
 
                     <button
@@ -4276,6 +4341,45 @@
                   </button>
                 </div>
               </header>
+
+              {/* Celebratory Payment Confirmation Banner (Direct Home Page Landing) */}
+              {paymentSuccessToast && (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+                  <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white p-4 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-400 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/30 border border-emerald-400 flex items-center justify-center text-2xl">
+                        ðŸŽ‰
+                      </div>
+                      <div>
+                        <div className="font-brand font-black text-base sm:text-lg text-emerald-100">
+                          Payment Successful! Order #{paymentSuccessToast.orderId} Confirmed
+                        </div>
+                        <div className="text-xs text-emerald-200 mt-0.5">
+                          Paid â‚¹{paymentSuccessToast.total} via Razorpay (Ref: <span className="font-mono font-bold text-white">{paymentSuccessToast.paymentId}</span>). Delicacies are being packed!
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setShowTrackOrderModal(true);
+                          setPaymentSuccessToast(null);
+                        }}
+                        className="bg-white text-emerald-950 font-black px-4 py-2 rounded-xl text-xs hover:bg-emerald-50 transition shadow-md cursor-pointer"
+                      >
+                        View in My Orders â†’
+                      </button>
+                      <button
+                        onClick={() => setPaymentSuccessToast(null)}
+                        className="text-emerald-300 hover:text-white font-bold text-xl px-2 py-1 leading-none cursor-pointer"
+                        title="Dismiss"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {viewMode === "product" && activeProductDetail ? (
                 // ================= DEDICATED SEPARATE PRODUCT PAGE WITH MULTI-IMAGE GALLERY & DELHIVERY PINCODE RATES =================
@@ -6465,157 +6569,6 @@
           )}
 
 
-          {/* ================= STEP 2: SECURE UPI & QR CODE PAYMENT GATEWAY ================= */}
-          {showAutoPaymentGatewayModal && pendingOrder && (
-            <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-stone-200 text-center space-y-4 p-6">
-                
-                {/* Header */}
-                <div className="flex justify-between items-center border-b pb-3">
-                  <div className="text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <h3 className="font-brand font-black text-xl text-stone-900">Automated UPI Gateway</h3>
-                    </div>
-                    <p className="text-[11px] text-stone-500">Auto-detecting payment &bull; Order #{pendingOrder.orderId}</p>
-                  </div>
-                  <button onClick={() => setShowAutoPaymentGatewayModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none cursor-pointer">&times;</button>
-                </div>
-
-                {/* Amount Highlight */}
-                <div className="bg-gradient-to-r from-emerald-50 via-sky-50 to-amber-50 p-4 rounded-2xl border border-emerald-200 flex justify-between items-center text-left">
-                  <div>
-                    <div className="text-xs text-stone-600 font-semibold">Total Payable Amount:</div>
-                    <div className="text-3xl font-black text-stone-950">&#8377;{pendingOrder.total}</div>
-                  </div>
-                  <div className="text-right">
-                    <span className="bg-emerald-100 text-emerald-900 font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg border border-emerald-300">
-                      UPI: {ownerConfig.upiId}
-                    </span>
-                    <div className="text-[10px] text-stone-500 mt-1">Recipient: CKP's Crunch</div>
-                  </div>
-                </div>
-
-                {/* Dynamic QR Code with Live Radar/Scanning Animation */}
-                <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3">
-                  <div className="relative inline-block mx-auto p-3 bg-white rounded-2xl border-2 border-dashed border-emerald-400 shadow-sm overflow-hidden">
-                    <img src={upiQrUrl} alt="Order QR Code" className="w-44 h-44 mx-auto rounded-lg" />
-                    
-                    {/* Live radar scanner line */}
-                    {paymentStep === "awaiting" && (
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-400/20 to-transparent animate-pulse pointer-events-none rounded-2xl"></div>
-                    )}
-
-                    {/* Detecting state overlay */}
-                    {paymentStep === "detecting" && (
-                      <div className="absolute inset-0 bg-white/95 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center p-4">
-                        <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-                        <div className="font-bold text-emerald-950 text-xs mt-3">Auto-Detecting Bank Credit...</div>
-                        <div className="text-[10px] text-stone-500">Reconciling with UPI / NPCI Network</div>
-                      </div>
-                    )}
-
-                    {/* Confirmed state overlay */}
-                    {paymentStep === "confirmed" && (
-                      <div className="absolute inset-0 bg-emerald-50/95 rounded-2xl flex flex-col items-center justify-center p-4">
-                        <div className="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-2xl font-bold">âœ“</div>
-                        <div className="font-bold text-emerald-950 text-sm mt-2">Payment Confirmed!</div>
-                        <div className="text-[10px] text-emerald-700">Redirecting to order receipt...</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Auto-detect Status Bar */}
-                  <div className="flex items-center justify-center gap-2 text-xs font-bold text-emerald-900 bg-emerald-100/70 py-2 px-3 rounded-xl border border-emerald-300">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>Live UPI Listener Active &bull; Scan via GPay / PhonePe / Paytm</span>
-                  </div>
-
-                  {/* Mobile Deep Link */}
-                  <a
-                    href={dynamicUpiUri}
-                    onClick={() => {
-                      setTimeout(() => {
-                        handleAutoDetectPayment();
-                      }, 5000);
-                    }}
-                    className="block w-full bg-emerald-700 hover:bg-emerald-800 text-white font-black py-3 rounded-xl text-xs shadow-md transition text-center cursor-pointer"
-                  >
-                    <span>&#128241;</span>
-                    <span> Tap to Pay via UPI App (GPay / PhonePe / Paytm)</span>
-                  </a>
-
-                  {/* Real Razorpay Official Auto-Detecting Gateway Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleLaunchRazorpayGateway(pendingOrder)}
-                    className="w-full bg-sky-900 hover:bg-sky-950 text-white font-black py-3.5 rounded-xl text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer border-2 border-sky-400/50"
-                  >
-                    <span>&#9889;</span>
-                    <span>Launch Auto-Detecting QR Gateway (Razorpay)</span>
-                  </button>
-
-                  {/* Amazon-style 1-Click Auto-Detect & Redirect Button */}
-                  <button
-                    type="button"
-                    onClick={handleAutoDetectPayment}
-                    disabled={paymentStep === "detecting" || paymentStep === "confirmed"}
-                    className="w-full bg-stone-900 hover:bg-stone-800 text-white font-bold py-2.5 rounded-xl text-xs shadow transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>&#10003;</span>
-                    <span>Direct Bank Transfer Done &mdash; Confirm &amp; Redirect</span>
-                  </button>
-
-                  {/* Optional Manual UTR Entry Toggle */}
-                  <div className="pt-2 border-t text-center">
-                    <button
-                      type="button"
-                      onClick={() => setShowUtrInput(!showUtrInput)}
-                      className="text-[11px] text-stone-500 hover:text-stone-800 font-semibold underline cursor-pointer"
-                    >
-                      {showUtrInput ? "Hide 12-Digit UTR Box" : "+ Have a 12-digit UTR receipt number? (Optional)"}
-                    </button>
-
-                    {showUtrInput && (
-                      <form onSubmit={handleSubmitUtrPayment} className="mt-2 space-y-2 text-left">
-                        <label className="block text-[11px] font-bold text-stone-700">
-                          12-Digit Bank Reference / UTR Number:
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            maxLength={12}
-                            value={enteredUtr}
-                            onChange={(e) => {
-                              const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 12);
-                              setEnteredUtr(val);
-                              setUtrError("");
-                            }}
-                            placeholder="e.g. 431289567123"
-                            className="w-full border rounded-xl px-3 py-2 font-mono text-xs font-bold bg-white"
-                          />
-                          <span className="absolute right-3 top-2.5 text-[10px] font-mono text-stone-400 font-bold">
-                            {enteredUtr.length}/12
-                          </span>
-                        </div>
-                        {utrError && (
-                          <div className="text-red-600 text-[11px] font-semibold">{utrError}</div>
-                        )}
-                        <button
-                          type="submit"
-                          disabled={enteredUtr.length !== 12 || isVerifyingUtr}
-                          className="w-full py-2 bg-stone-900 text-white font-bold rounded-xl text-xs hover:bg-stone-800 transition disabled:opacity-50"
-                        >
-                          Submit UTR &amp; Confirm
-                        </button>
-                      </form>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
           {/* ================= ORDER CONFIRMATION MODAL ================= */}
           {orderSuccessData && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -6691,151 +6644,182 @@
               </div>
             </div>
           )}
-          {/* ================= CUSTOMER TRACK & CANCEL ORDER MODAL ================= */}
+          {/* ================= CUSTOMER MY ORDERS & DELIVERY TRACKING MODAL ================= */}
           {showTrackOrderModal && (
             <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+              <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-stone-200 space-y-4 max-h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center border-b pb-3">
                   <div>
-                    <span className="bg-sky-100 text-sky-900 text-[10px] font-black px-2 py-0.5 rounded uppercase">Customer Care</span>
-                    <h3 className="font-brand font-black text-xl text-stone-900 mt-1">Track or Cancel Your Order</h3>
+                    <div className="flex items-center gap-2">
+                      <span className="bg-amber-100 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded uppercase">Customer Account</span>
+                      {currentUser && (
+                        <span className="bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2 py-0.5 rounded">
+                          ðŸ‘¤ {currentUser.name}
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-brand font-black text-xl text-stone-900 mt-1">ðŸ“¦ My Orders &amp; Delivery Tracking</h3>
                   </div>
-                  <button onClick={() => setShowTrackOrderModal(false)} className="text-stone-400 hover:text-stone-700 text-xl font-bold">&times;</button>
+                  <button onClick={() => setShowTrackOrderModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none cursor-pointer">&times;</button>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-stone-700">Enter Your Order ID or 10-Digit Mobile Number:</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={trackSearchInput}
-                      onChange={(e) => setTrackSearchInput(e.target.value)}
-                      placeholder="e.g. ORD-123456 or 9820011223"
-                      className="flex-1 border rounded-xl px-3.5 py-2.5 text-xs font-bold font-mono focus:ring-2 focus:ring-sky-700 uppercase"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const clean = trackSearchInput.trim().toUpperCase();
-                        if (!clean) return;
-                        const found = orders.find(o => o.orderId.toUpperCase() === clean || (o.customer && o.customer.mobile && o.customer.mobile.replace(/\D/g, '').includes(clean)));
-                        if (found) {
-                          setTrackedOrder(found);
-                        } else {
-                          alert("No order found with that Order ID or Mobile Number. Please check your order confirmation.");
-                          setTrackedOrder(null);
-                        }
-                      }}
-                      className="bg-sky-900 hover:bg-sky-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition"
-                    >
-                      Find Order
-                    </button>
-                  </div>
-                </div>
-
-                {trackedOrder ? (
-                  <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200 space-y-3 text-xs">
-                    <div className="flex justify-between items-start border-b pb-2">
-                      <div>
-                        <div className="font-black text-sm text-stone-900">{trackedOrder.orderId}</div>
-                        <div className="text-[11px] text-stone-500">Placed on {trackedOrder.date} at {trackedOrder.time || "Recently"}</div>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${
-                        trackedOrder.status === "Cancelled by Customer"
-                          ? "bg-red-100 text-red-900 border border-red-300"
-                          : "bg-emerald-100 text-emerald-900"
-                      }`}>
-                        {trackedOrder.status === "Cancelled by Customer" ? "❌ Cancelled" : trackedOrder.status}
-                      </span>
+                {/* If guest or wants to search by mobile/orderId */}
+                {!currentUser && (
+                  <div className="space-y-1.5 bg-stone-50 p-3 rounded-2xl border border-stone-200">
+                    <label className="block text-xs font-bold text-stone-700">Enter Your 10-Digit Mobile Number or Order ID:</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={trackSearchInput}
+                        onChange={(e) => setTrackSearchInput(e.target.value)}
+                        placeholder="e.g. 9820011223 or CKP-123456"
+                        className="flex-1 border rounded-xl px-3.5 py-2 text-xs font-bold font-mono focus:ring-2 focus:ring-amber-700 uppercase bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const clean = trackSearchInput.trim().toUpperCase();
+                          if (!clean) return;
+                          const found = orders.find(o => o.orderId.toUpperCase() === clean || (o.customer && o.customer.mobile && o.customer.mobile.replace(/\D/g, '').includes(clean)) || (o.phone && o.phone.replace(/\D/g, '').includes(clean)));
+                          if (found) {
+                            setTrackedOrder(found);
+                          } else {
+                            alert("No order found with that Mobile Number or Order ID.");
+                            setTrackedOrder(null);
+                          }
+                        }}
+                        className="bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs px-4 py-2 rounded-xl transition cursor-pointer"
+                      >
+                        Search
+                      </button>
                     </div>
-
-                    <div className="space-y-1 text-stone-700">
-                      <div><strong>Customer:</strong> {trackedOrder.customer.fullName} ({trackedOrder.customer.mobile})</div>
-                      <div><strong>Delivery Address:</strong> {trackedOrder.customer.streetAddress}, {trackedOrder.customer.city} - {trackedOrder.customer.pincode}</div>
-                      <div><strong>Items:</strong> {trackedOrder.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(", ")}</div>
-                      <div className="font-bold text-stone-900 pt-1 border-t flex justify-between">
-                        <span>Total Paid:</span>
-                        <span>₹{trackedOrder.total}</span>
-                      </div>
-                    </div>
-
-                    {trackedOrder.status === "Cancelled by Customer" ? (
-                      <div className="bg-red-50 border border-red-200 text-red-800 p-2.5 rounded-xl text-xs font-semibold">
-                        <strong>Order Status:</strong> Cancelled by Customer on {trackedOrder.cancelledAt || "Recently"}.
-                        {trackedOrder.cancellationReason && <div>Reason: "{trackedOrder.cancellationReason}"</div>}
-                      </div>
-                    ) : (
-                      <div className="space-y-3 pt-1">
-                        <div className="bg-white p-3 rounded-xl border border-stone-200 space-y-1.5">
-                          {trackedOrder.status && trackedOrder.status.includes("Awaiting Payment Verification") && (
-                            <div className="bg-amber-50 border border-amber-300 text-amber-950 p-2.5 rounded-xl text-xs font-semibold space-y-1">
-                              <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                                <span>&#9203;</span>
-                                <span>Awaiting Bank Verification</span>
-                              </div>
-                              <div className="text-[11px] text-amber-800">
-                                Your submitted UTR (<span className="font-mono font-bold">{trackedOrder.utrNumber}</span>) is being verified against our bank statement. Packaging will commence as soon as payment is confirmed.
-                              </div>
-                            </div>
-                          )}
-
-                          {trackedOrder.status && trackedOrder.status.includes("Rejected") && (
-                            <div className="bg-red-50 border border-red-300 text-red-950 p-2.5 rounded-xl text-xs font-semibold space-y-1">
-                              <div className="font-bold flex items-center gap-1.5 text-red-900">
-                                <span>&times;</span>
-                                <span>Order Rejected: Unpaid Transaction</span>
-                              </div>
-                              <div className="text-[11px] text-red-800">
-                                {trackedOrder.rejectionReason || "Payment could not be verified in store bank account."}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="text-[11px] font-bold text-stone-700 flex justify-between">
-                            <span>Delivery Status:</span>
-                            <span className="text-amber-800 font-extrabold">{trackedOrder.status.replace(" (Auto-Verified)", "").replace(" (Verified by Owner)", "")}</span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-1 text-center pt-1">
-                            {["Packed", "Dispatched", "Out for Delivery", "Delivered"].map((st, idx) => {
-                              const stepOrder = ["Payment Confirmed", "Packed", "Dispatched", "Out for Delivery", "Delivered"];
-                              const curName = trackedOrder.status.replace(" (Auto-Verified)", "");
-                              const currentIdx = stepOrder.indexOf(curName);
-                              const isDone = currentIdx >= (idx + 1);
-                              return (
-                                <div key={st} className={`p-1.5 rounded-lg text-[10px] font-bold border transition ${
-                                  isDone ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-stone-50 text-stone-400 border-stone-200"
-                                }`}>
-                                  {isDone ? "&#10003; " : ""}{st}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => handleCancelCustomerOrder(trackedOrder.orderId)}
-                            className="w-full py-2.5 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs"
-                          >
-                            <span>&#10060;</span>
-                            <span>Cancel This Order</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                ) : (
-                  <p className="text-[11px] text-stone-500 text-center py-4">
-                    Enter your Order ID (from receipt) or Phone Number to view status or cancel an order.
-                  </p>
                 )}
 
-                <div className="border-t pt-2">
+                {/* Order List Display */}
+                <div className="overflow-y-auto space-y-3 flex-1 pr-1">
+                  {(() => {
+                    const currentUid = currentUser ? (currentUser.mobile || currentUser.id) : null;
+                    const customerOrders = orders.filter(o => {
+                      if (trackedOrder && trackedOrder.orderId === o.orderId) return true;
+                      if (!currentUser) {
+                        if (!trackSearchInput) return false;
+                        const clean = trackSearchInput.trim().toUpperCase();
+                        return (o.orderId.toUpperCase() === clean || (o.customer && o.customer.mobile && o.customer.mobile.replace(/\D/g, '').includes(clean)) || (o.phone && o.phone.replace(/\D/g, '').includes(clean)));
+                      }
+                      return (
+                        o.userId === currentUid ||
+                        o.phone === currentUser.mobile ||
+                        o.mobile === currentUser.mobile ||
+                        (o.customer && o.customer.mobile === currentUser.mobile) ||
+                        (registeredUsers[currentUid]?.orders?.some(ro => ro.orderId === o.orderId))
+                      );
+                    });
+
+                    if (customerOrders.length === 0) {
+                      return (
+                        <div className="text-center py-10 text-stone-500 space-y-2">
+                          <span className="text-4xl">ðŸ›ï¸</span>
+                          <div className="font-bold text-sm text-stone-800">No past orders found</div>
+                          <p className="text-xs text-stone-500 max-w-xs mx-auto">
+                            {currentUser
+                              ? "You have not placed any orders under this account yet. Add our delicious dried fish, masalas, or pickles to your cart!"
+                              : "Enter your 10-digit mobile number above to view all past orders placed from your phone."}
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return customerOrders.map(order => {
+                      const isCancelled = isOrderCancelled(order);
+                      return (
+                        <div key={order.orderId} className={`rounded-2xl p-4 border text-xs space-y-3 transition ${
+                          isCancelled ? "bg-red-50/70 border-red-200" : "bg-stone-50 border-stone-200"
+                        }`}>
+                          <div className="flex justify-between items-start border-b pb-2">
+                            <div>
+                              <div className="font-black text-sm text-stone-900">{order.orderId}</div>
+                              <div className="text-[11px] text-stone-500">Placed on {order.date} {order.time ? `at ${order.time}` : ""}</div>
+                            </div>
+                            <span className={`px-2.5 py-1 rounded-full font-extrabold text-[10px] ${
+                              isCancelled
+                                ? "bg-red-100 text-red-900 border border-red-300"
+                                : order.status === "Delivered"
+                                ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                                : "bg-amber-100 text-amber-900 border border-amber-300"
+                            }`}>
+                              {isCancelled ? "âŒ " + order.status : order.status}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1 text-stone-700">
+                            <div><strong>Items:</strong> {order.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(", ")}</div>
+                            <div><strong>Delivery:</strong> {order.customer?.streetAddress || ""}, {order.customer?.city || ""} - {order.customer?.pincode || ""}</div>
+                            <div className="font-bold text-stone-900 pt-1 border-t flex justify-between">
+                              <span>Total Paid via Razorpay:</span>
+                              <span className="text-stone-950 font-black">â‚¹{order.total}</span>
+                            </div>
+                            {order.utrNumber && (
+                              <div className="text-[10px] text-stone-400 font-mono">
+                                Payment Ref ID: {order.utrNumber}
+                              </div>
+                            )}
+                          </div>
+
+                          {isCancelled ? (
+                            <div className="bg-red-50 border border-red-200 text-red-800 p-2.5 rounded-xl text-xs font-semibold">
+                              <strong>Order Cancelled on {order.cancelledAt || "Recently"}.</strong>
+                              {order.cancellationReason && <div className="mt-0.5">Reason: "{order.cancellationReason}"</div>}
+                            </div>
+                          ) : (
+                            <div className="space-y-2 pt-1">
+                              {/* 4-Step Delivery Progress Tracker */}
+                              <div className="bg-white p-2.5 rounded-xl border border-stone-200 space-y-1">
+                                <div className="text-[10px] font-bold text-stone-600 uppercase tracking-wider flex justify-between">
+                                  <span>Tracking Status:</span>
+                                  <span className="text-amber-900 font-extrabold">{order.status.replace(" (Auto-Verified)", "").replace(" (Verified by Owner)", "")}</span>
+                                </div>
+                                <div className="grid grid-cols-4 gap-1 text-center pt-1">
+                                  {["Packed", "Dispatched", "Out for Delivery", "Delivered"].map((st, idx) => {
+                                    const stepOrder = ["Payment Confirmed", "Packed", "Dispatched", "Out for Delivery", "Delivered"];
+                                    const curName = order.status.replace(" (Auto-Verified)", "").replace(" (Verified by Owner)", "");
+                                    const currentIdx = stepOrder.indexOf(curName);
+                                    const isDone = currentIdx >= (idx + 1);
+                                    return (
+                                      <div key={st} className={`p-1 rounded-lg text-[9px] font-bold border transition ${
+                                        isDone ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-stone-50 text-stone-400 border-stone-200"
+                                      }`}>
+                                        {isDone ? "âœ“ " : ""}{st}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleCancelCustomerOrder(order.orderId)}
+                                className="w-full py-2 bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 rounded-xl font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                              >
+                                <span>âŒ</span>
+                                <span>Cancel This Order</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+
+                <div className="border-t pt-2 flex justify-between items-center gap-2">
+                  <div className="text-[11px] text-stone-500">
+                    {currentUser ? "Orders permanently stored in your account." : "Orders synced to your mobile number."}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowTrackOrderModal(false)}
-                    className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold text-xs"
+                    className="py-2 px-5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl font-bold text-xs transition cursor-pointer"
                   >
                     Close
                   </button>
@@ -6843,7 +6827,6 @@
               </div>
             </div>
           )}
-
 
           {/* ================= SAME UNIFIED LOGIN MODAL ================= */}
           {showLoginModal && (
