@@ -1912,7 +1912,11 @@
           prefill: {
             name: orderToPay.customer?.fullName || orderToPay.customerName || "",
             contact: orderToPay.customer?.mobile || orderToPay.mobile || "",
-            email: orderToPay.customer?.email || "orders@ckpscrunch.com"
+            email: (orderToPay.customer?.email || ("customer" + ((orderToPay.customer?.mobile || orderToPay.mobile || "user").replace(/[^0-9]/g, "")) + "@ckpscrunch.com"))
+          },
+          readonly: {
+            contact: true,
+            email: true
           },
           notes: {
             orderId: orderToPay.orderId,
