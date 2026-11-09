@@ -2375,7 +2375,7 @@
               <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="bg-amber-500 text-stone-950 font-black px-2 py-0.5 rounded text-[10px] uppercase tracking-wider">
-                    {isOwner ? `👑 Owner: ${ownerConfig.id}` : `👤 Staff: ${currentUser.name}`}
+                    {isOwner ? `👑 Owner: ${ownerConfig.id}` : `👤 Staff: &#128100; {currentUser.name}`}
                   </span>
                   <span className="text-stone-300 hidden sm:inline">
                     {isOwner ? "Manage Orders, Live Stock, Staff, and Customize Any Website Text & Tagline." : "Staff Editor: Update Stock, Orders & Product Details. (Owner protected)."}
@@ -2768,8 +2768,7 @@
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {isCancelled ? (
-                                  <span className="font-extrabold px-3 py-1 rounded-lg text-[11px] bg-red-100 text-red-900 border border-red-400 flex items-center gap-1 shadow-xs">
-                                    <span>âŒ</span> {order.status}
+                                  <span className="font-extrabold px-3 py-1 rounded-lg text-[11px] bg-red-100 text-red-900 border border-red-400 flex items-center gap-1 shadow-xs"><span>&#10060;</span> {order.status}
                                   </span>
                                 ) : (
                                   <div className="flex items-center gap-1.5">
@@ -4253,7 +4252,7 @@
                           className="text-stone-700 font-bold text-xs bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-xl border flex items-center gap-1"
                           title="Account Profile & Change Password"
                         >
-                          <span>👤 {currentUser.name}</span>
+                          <span&#128100; {currentUser.name}</span>
                         </button>
                         <button onClick={handleLogout} className="text-stone-400 hover:text-stone-700 text-xs">
                           Log Out
@@ -4283,8 +4282,7 @@
                       className="inline-flex items-center gap-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 px-3 py-2 rounded-xl text-xs font-bold transition shadow-xs border border-amber-300 cursor-pointer"
                       title="View all your past orders, delivery status, and tracking"
                     >
-                      <span>ðŸ“¦</span>
-                      <span className="font-extrabold">My Orders</span>
+                      <span>&#128230;</span> <span className="font-extrabold">My Orders</span>
                       {currentUser && (
                         <span className="bg-amber-800 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono">
                           {orders.filter(o => o.userId === (currentUser.mobile || currentUser.id) || o.phone === currentUser.mobile || o.mobile === currentUser.mobile || (o.customer && o.customer.mobile === currentUser.mobile)).length}
@@ -4348,14 +4346,14 @@
                   <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white p-4 sm:p-5 rounded-3xl shadow-xl border-2 border-emerald-400 flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3.5">
                       <div className="w-12 h-12 rounded-2xl bg-emerald-500/30 border border-emerald-400 flex items-center justify-center text-2xl">
-                        ðŸŽ‰
+                        
                       </div>
                       <div>
                         <div className="font-brand font-black text-base sm:text-lg text-emerald-100">
                           Payment Successful! Order #{paymentSuccessToast.orderId} Confirmed
                         </div>
                         <div className="text-xs text-emerald-200 mt-0.5">
-                          Paid â‚¹{paymentSuccessToast.total} via Razorpay (Ref: <span className="font-mono font-bold text-white">{paymentSuccessToast.paymentId}</span>). Delicacies are being packed!
+                          Paid &#8377;{paymentSuccessToast.total} via Razorpay (Ref: <span className="font-mono font-bold text-white">{paymentSuccessToast.paymentId}</span>). Delicacies are being packed!
                         </div>
                       </div>
                     </div>
@@ -6654,11 +6652,11 @@
                       <span className="bg-amber-100 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded uppercase">Customer Account</span>
                       {currentUser && (
                         <span className="bg-emerald-100 text-emerald-900 text-[10px] font-bold px-2 py-0.5 rounded">
-                          ðŸ‘¤ {currentUser.name}
+                           {currentUser.name}
                         </span>
                       )}
                     </div>
-                    <h3 className="font-brand font-black text-xl text-stone-900 mt-1">ðŸ“¦ My Orders &amp; Delivery Tracking</h3>
+                    <h3 className="font-brand font-black text-xl text-stone-900 mt-1">&#128230; My Orders &amp; Delivery Tracking</h3>
                   </div>
                   <button onClick={() => setShowTrackOrderModal(false)} className="text-stone-400 hover:text-stone-700 text-2xl font-bold leading-none cursor-pointer">&times;</button>
                 </div>
@@ -6719,7 +6717,7 @@
                     if (customerOrders.length === 0) {
                       return (
                         <div className="text-center py-10 text-stone-500 space-y-2">
-                          <span className="text-4xl">ðŸ›ï¸</span>
+                          <span className="text-4xl">&#128722;</span>
                           <div className="font-bold text-sm text-stone-800">No past orders found</div>
                           <p className="text-xs text-stone-500 max-w-xs mx-auto">
                             {currentUser
@@ -6748,7 +6746,7 @@
                                 ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
                                 : "bg-amber-100 text-amber-900 border border-amber-300"
                             }`}>
-                              {isCancelled ? "âŒ " + order.status : order.status}
+                              {isCancelled ? "&#10060; " + order.status : order.status}
                             </span>
                           </div>
 
@@ -6757,7 +6755,7 @@
                             <div><strong>Delivery:</strong> {order.customer?.streetAddress || ""}, {order.customer?.city || ""} - {order.customer?.pincode || ""}</div>
                             <div className="font-bold text-stone-900 pt-1 border-t flex justify-between">
                               <span>Total Paid via Razorpay:</span>
-                              <span className="text-stone-950 font-black">â‚¹{order.total}</span>
+                              <span className="text-stone-950 font-black">&#8377;{order.total}</span>
                             </div>
                             {order.utrNumber && (
                               <div className="text-[10px] text-stone-400 font-mono">
@@ -6789,7 +6787,7 @@
                                       <div key={st} className={`p-1 rounded-lg text-[9px] font-bold border transition ${
                                         isDone ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-stone-50 text-stone-400 border-stone-200"
                                       }`}>
-                                        {isDone ? "âœ“ " : ""}{st}
+                                        {isDone ? "&#10003; " : ""}{st}
                                       </div>
                                     );
                                   })}
